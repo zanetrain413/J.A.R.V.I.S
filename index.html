@@ -846,11 +846,22 @@ function handleLocalCommand(q){
   // Briefing
   if(/^(daily\s+)?briefing|brief me/.test(lower)){showBriefing();return null;}
 
+  // -- Mamba sequence --
+  if(/^mamba[\.|!|\?]?$/.test(lower.trim())){
+    window.open('onenote:','_blank');
+    setTimeout(()=>window.open('https://compass.education','_blank'),300);
+    setTimeout(()=>window.open('https://www.youtube.com/watch?v=HrxX9TBj2zY&autoplay=1','_blank'),600);
+    playBeep(200,0.06); setTimeout(()=>playBeep(400,0.08),100); setTimeout(()=>playBeep(700,0.08),200); setTimeout(()=>playBeep(1000,0.2),320);
+    return 'Mamba sequence activated, Mr. Ondrak.';
+  }
+
   // -- Engage sequence --
   if(/^engage[\.!\?]?$/.test(lower.trim()) || lower.trim()==='engage'){
     window.open('https://makerworld.com','_blank');
-    setTimeout(()=>window.open('https://world-monitor.com','_blank'),150);
-    setTimeout(()=>window.open('https://www.youtube.com/watch?v=FVdO7g0_lXc&list=RDFVdO7g0_lXc&start_radio=1&autoplay=1','_blank'),300);
+    setTimeout(()=>window.open('https://world-monitor.com','_blank'),200);
+    setTimeout(()=>window.open('https://www.printables.com','_blank'),400);
+    setTimeout(()=>window.open('https://www.tinkercad.com','_blank'),600);
+    setTimeout(()=>window.open('https://www.youtube.com/watch?v=FVdO7g0_lXc&list=RDFVdO7g0_lXc&start_radio=1&autoplay=1','_blank'),800);
     playBeep(300,0.06); setTimeout(()=>playBeep(500,0.08),100); setTimeout(()=>playBeep(800,0.08),200); setTimeout(()=>playBeep(1100,0.2),320);
     return 'Engaging, Mr. Ondrak.';
   }
