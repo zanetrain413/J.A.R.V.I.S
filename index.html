@@ -341,8 +341,8 @@ body {
   </div>
 
   <div class="apikey-row">
-    <label>GEMINI KEY</label>
-    <input class="apikey-input" type="password" id="apiKey" placeholder="AIza..." />
+    <label>MISTRAL KEY</label>
+    <input class="apikey-input" type="password" id="apiKey" placeholder="Enter Mistral key..." />
     <button class="save-key-btn" onclick="saveKey()">SAVE</button>
   </div>
 
@@ -481,7 +481,7 @@ const bootMessages=[
   'Initialising J.A.R.V.I.S. v8.0...',
   'Loading neural interface...',
   'Calibrating voice recognition...',
-  'Connecting to Gemini AI core...',
+  'Connecting to Mistral AI core...',
   'Loading memory banks ('+ memories.length +' entries)...',
   'All systems nominal.',
   'Welcome back, Mr. Ondrak.'
@@ -969,10 +969,10 @@ function handleLocalCommand(q){
   return null;
 }
 
-// -- Gemini ─────────────────────────────────────────────────────────
+// -- Mistral --
 async function callJarvis(query){
   const apiKey=document.getElementById('apiKey').value.trim();
-  if(!apiKey)return 'Gemini API key required, Mr. Ondrak. Get one free at aistudio.google.com';
+  if(!apiKey)return 'Mistral API key required, Mr. Ondrak. Get one free at console.mistral.ai';
   const memCtx=memories.length?'\n\nNotes for Mr. Ondrak: '+memories.map(m=>m.text).join('; '):'';
   const systemPrompt=`You are J.A.R.V.I.S. — Just A Rather Very Intelligent System — the personal AI of Mr. Ondrak. Embody the character fully:
 
@@ -991,26 +991,24 @@ ANSWERING STYLE:
 - Compliments: deflect with modest wit. "I do try, sir."
 - Never say "As an AI" or "I cannot". Just answer or redirect naturally in character.
 - Vary your sentence structure — don't always start with "Of course" or "Certainly".`+memCtx;
-  conversationHistory.push({role:'user',parts:[{text:query}]});
+  const msgs=[{role:'system',content:systemPrompt},...conversationHistory,{role:'user',content:query}];
   try{
-    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        system_instruction:{parts:[{text:systemPrompt}]},
-        contents:conversationHistory,
-        tools:[{google_search:{}}],
-        generationConfig:{maxOutputTokens:1000}
-      })
+    const res=await fetch('https://api.mistral.ai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+      body:JSON.stringify({model:'mistral-small-latest',messages:msgs,max_tokens:1000})
     });
     if(!res.ok){
       const err=await res.json().catch(()=>({}));
-      if(res.status===400)return 'Invalid API key, sir. Please check your Gemini key.';
+      if(res.status===401)return 'Invalid API key, sir. Please check your Mistral key.';
       if(res.status===429)return 'Rate limit reached, sir. Please wait a moment.';
-      return 'System error '+res.status+': '+(err.error?.message||'Unknown error');
+      return 'System error '+res.status+': '+(err.message||'Unknown error');
     }
     const data=await res.json();
-    const text=data.candidates?.[0]?.content?.parts?.filter(p=>p.text).map(p=>p.text).join('\n')||'';
-    conversationHistory.push({role:'model',parts:[{text:text||'...'}]});
+    const text=data.choices?.[0]?.message?.content||'';
+    conversationHistory.push({role:'user',content:query});
+    conversationHistory.push({role:'assistant',content:text});
+    if(conversationHistory.length>20)conversationHistory=conversationHistory.slice(-20);
     return text||'Processed, but no verbal response available, sir.';
   }catch(e){return 'Network failure, sir: '+e.message;}
 }
