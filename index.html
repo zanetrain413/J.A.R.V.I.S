@@ -1041,6 +1041,32 @@ function handleLocalCommand(q){
     return 'Never gonna give you up, Mr. Ondrak.';
   }
 
+  // -- Order 66 --
+  if(/^execute order 66[.!?]?$/.test(lower.trim())){
+    window.open('https://open.spotify.com/playlist/37i9dQZF1DXaUaRhCgtpCo?si=3e1413992a2a469b','_blank');
+    // Flash red theme temporarily
+    const prevTheme=document.body.className;
+    document.body.className='theme-red';
+    setTimeout(()=>document.body.className=prevTheme, 8000);
+    // Dramatic sound
+    playBeep(150,0.3,'sawtooth',0.2);
+    setTimeout(()=>playBeep(120,0.4,'sawtooth',0.2),350);
+    setTimeout(()=>playBeep(100,0.5,'sawtooth',0.2),750);
+    return 'As you wish, my lord. Order 66 has been executed. The Jedi are no more.';
+  }
+
+  // -- Order 66 --
+  if(/^(execute order 66|order 66)/.test(lower)){
+    window.open('https://open.spotify.com/playlist/37i9dQZF1DXaUaRhCgtpCo?si=3e1413992a2a469b','_blank');
+    // Flash red theme temporarily
+    const prevTheme=document.body.className;
+    document.body.className='theme-red';
+    setTimeout(()=>document.body.className=prevTheme,5000);
+    // Dramatic sound
+    playBeep(150,0.3,'sawtooth',0.15); setTimeout(()=>playBeep(120,0.4,'sawtooth',0.12),400); setTimeout(()=>playBeep(100,0.5,'sawtooth',0.1),900);
+    return 'As you wish, my lord. Order 66 has been executed. The Jedi are no more.';
+  }
+
   // -- Easter eggs (check first) --
   const egg=checkEasterEgg(lower);
   if(egg){ playNotif(); return egg; }
