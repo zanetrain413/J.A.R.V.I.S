@@ -307,6 +307,55 @@ body {
 #confidenceBar { height:100%; width:0%; background:var(--accent2); transition:width 0.3s, background 0.3s; border-radius:2px; }
 #confidenceLabel { color:#2a7a9a; min-width:32px; text-align:right; }
 #confidenceTitle { color:#1a5a72; letter-spacing:2px; }
+
+/* Lock screen */
+#lockScreen {
+  position:fixed; inset:0; background:var(--bg);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  z-index:500; padding:20px;
+}
+#lockScreen .lock-logo {
+  font-family:'Rajdhani',sans-serif; font-size:32px; font-weight:700;
+  letter-spacing:8px; color:var(--accent);
+  text-shadow:0 0 20px rgba(0,180,255,0.6); margin-bottom:12px;
+}
+#lockScreen .lock-sub {
+  font-family:'Share Tech Mono',monospace; font-size:11px;
+  color:#2a7a9a; letter-spacing:3px; margin-bottom:40px;
+}
+#lockScreen .lock-prompt {
+  font-family:'Share Tech Mono',monospace; font-size:13px;
+  color:#4ab8d8; margin-bottom:20px; text-align:center; line-height:1.8;
+}
+#lockScreen .lock-status {
+  font-family:'Share Tech Mono',monospace; font-size:12px;
+  color:#1a5a72; margin-bottom:20px; min-height:20px; text-align:center;
+}
+#lockScreen .lock-status.denied { color:#ff4444; animation:timerDone 0.5s ease infinite alternate; }
+#lockScreen .lock-status.granted { color:var(--accent2); }
+#lockInput {
+  font-family:'Share Tech Mono',monospace; font-size:13px;
+  background:rgba(0,20,40,0.7); border:1px solid var(--border);
+  color:var(--text); padding:10px 14px; border-radius:2px; outline:none;
+  width:100%; max-width:340px; margin-bottom:10px; text-align:center;
+}
+#lockInput:focus { border-color:rgba(0,180,255,0.3); }
+#lockSubmit {
+  font-family:'Rajdhani',sans-serif; font-weight:700; font-size:14px;
+  letter-spacing:2px; padding:10px 30px;
+  background:rgba(0,180,255,0.1); border:1px solid #0a5a7a;
+  color:var(--accent); cursor:pointer; border-radius:2px; transition:all 0.2s;
+  width:100%; max-width:340px;
+}
+#lockSubmit:hover { background:rgba(0,180,255,0.2); }
+.lock-ring {
+  width:80px; height:80px; border-radius:50%;
+  border:2px solid var(--border);
+  display:flex; align-items:center; justify-content:center;
+  margin-bottom:30px;
+  animation:ring-pulse 3s ease-in-out infinite;
+}
+.lock-ring svg { width:32px; height:32px; }
 </style>
 </head>
 <body>
@@ -318,6 +367,23 @@ body {
 </div>
 
 <div class="scanline"></div>
+
+<div id="lockScreen">
+  <div class="lock-ring">
+    <svg viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="11" width="18" height="11" rx="2" stroke="#00b4ff" stroke-width="1.5" fill="none"/>
+      <path d="M7 11V7a5 5 0 0110 0v4" stroke="#00b4ff" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+    </svg>
+  </div>
+  <div class="lock-logo">J.A.R.V.I.S.</div>
+  <div class="lock-sub">AUTHORISATION REQUIRED</div>
+  <div class="lock-prompt">Say or type the passphrase<br>to gain access</div>
+  <div class="lock-status" id="lockStatus"></div>
+  <input class="text-input" type="password" id="lockInput" placeholder="Enter passphrase..." />
+  <br><br>
+  <button id="lockSubmit" onclick="checkPassword()">AUTHENTICATE</button>
+</div>
+
 
 <div class="hud-container" id="hudContainer">
 
@@ -451,6 +517,7 @@ let voices=[], selectedVoice=null;
 let cmdHistory=[], currentUtterance=null, conversationHistory=[];
 let deferredInstallPrompt=null;
 let timerInterval=null, timerSeconds=0;
+let jarvisUnlocked=false;
 let stopwatchInterval=null, stopwatchMs=0, stopwatchRunning=false;
 let memories = JSON.parse(localStorage.getItem('jarvis_memories')||'[]');
 let audioCtx=null;
@@ -499,7 +566,7 @@ function runBoot(){
         setTimeout(()=>{
           bs.style.display='none';
           document.getElementById('hudContainer').classList.add('visible');
-          showGreeting(); startWakeWord();
+          startWakeWord();
         },600);
       },400);
       return;
@@ -1058,6 +1125,34 @@ function sendText(){
   if(!val)return; document.getElementById('textInput').value=''; processQuery(val);
 }
 document.getElementById('textInput').addEventListener('keypress',e=>{if(e.key==='Enter')sendText();});
+document.getElementById('lockInput').addEventListener('keypress',e=>{if(e.key==='Enter')checkPassword();});
+
+function checkPassword(){
+  const input=document.getElementById('lockInput').value.toLowerCase().trim();
+  const status=document.getElementById('lockStatus');
+  const correct=['jarvis are you there','jarvis, are you there'];
+  if(correct.some(p=>input.includes(p))||input==='jarvis are you there'){
+    status.className='lock-status granted';
+    status.textContent='IDENTITY CONFIRMED';
+    playBeep(400,0.08); setTimeout(()=>playBeep(700,0.1),100); setTimeout(()=>playBeep(1000,0.15),220);
+    jarvisUnlocked=true;
+    setTimeout(()=>{
+      document.getElementById('lockScreen').style.transition='opacity 0.6s';
+      document.getElementById('lockScreen').style.opacity='0';
+      setTimeout(()=>{ document.getElementById('lockScreen').style.display='none'; },600);
+    },800);
+    setTimeout(()=>{
+      const msg='Yes sir. How may I assist you today?';
+      displayResponse(msg); speak(msg);
+    },1200);
+  } else {
+    status.className='lock-status denied';
+    status.textContent='SECURITY BREACH ATTEMPTED. INITIATING LOCKDOWN.';
+    playBeep(200,0.3,'sawtooth',0.2);
+    document.getElementById('lockInput').value='';
+    setTimeout(()=>{ status.textContent=''; status.className='lock-status'; },3000);
+  }
+}
 
 function showGreeting(){
   const h=new Date().getHours();
