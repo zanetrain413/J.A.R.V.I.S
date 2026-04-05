@@ -846,13 +846,34 @@ function handleLocalCommand(q){
   // Briefing
   if(/^(daily\s+)?briefing|brief me/.test(lower)){showBriefing();return null;}
 
-  // -- Mamba sequence --
-  if(/^mamba[\.|!|\?]?$/.test(lower.trim())){
+  // -- Protocol sequence --
+  if(/^protocol[.!?]?$/.test(lower.trim())){
+    const lines=[
+      "I am Iron Man.",
+      "Genius. Billionaire. Playboy. Philanthropist.",
+      "Sometimes you gotta run before you can walk.",
+      "Part of the journey is the end.",
+      "No amount of money ever bought a second of time.",
+      "We have a Hulk.",
+      "The truth is... I am Iron Man.",
+      "Doth mother know you weareth her drapes?",
+      "I can do this all day.",
+      "That's my secret. I'm always angry.",
+      "Evacuate the city. Engage all defenses. And get this man a shield.",
+      "You're in the endgame now.",
+      "I love you 3000.",
+      "On your left.",
+      "Mamba mentality — always be attacking.",
+      "Do you believe in magic, Mr. Ondrak?",
+      "With great power comes great electricity bill.",
+      "Jarvis, it's not that I'm lazy. It's that I just don't care.",
+    ];
+    const line=lines[Math.floor(Math.random()*lines.length)];
     window.open('onenote:','_blank');
     setTimeout(()=>window.open('https://compass.education','_blank'),300);
     setTimeout(()=>window.open('https://www.youtube.com/watch?v=HrxX9TBj2zY&autoplay=1','_blank'),600);
-    playBeep(200,0.06); setTimeout(()=>playBeep(400,0.08),100); setTimeout(()=>playBeep(700,0.08),200); setTimeout(()=>playBeep(1000,0.2),320);
-    return 'Mamba sequence activated, Mr. Ondrak.';
+    playBeep(500,0.08); setTimeout(()=>playBeep(800,0.12),120); setTimeout(()=>playBeep(1100,0.18),260);
+    return 'Protocol initiated. ' + line;
   }
 
   // -- Engage sequence --
