@@ -451,6 +451,7 @@ let voices=[], selectedVoice=null;
 let cmdHistory=[], currentUtterance=null, conversationHistory=[];
 let deferredInstallPrompt=null;
 let timerInterval=null, timerSeconds=0;
+let stopwatchInterval=null, stopwatchMs=0, stopwatchRunning=false;
 let memories = JSON.parse(localStorage.getItem('jarvis_memories')||'[]');
 let audioCtx=null;
 
@@ -874,6 +875,52 @@ function handleLocalCommand(q){
     setTimeout(()=>window.open('https://www.youtube.com/watch?v=HrxX9TBj2zY&autoplay=1','_blank'),600);
     playBeep(500,0.08); setTimeout(()=>playBeep(800,0.12),120); setTimeout(()=>playBeep(1100,0.18),260);
     return 'Protocol initiated. ' + line;
+  }
+
+  // -- Random number --
+  const rngMatch=lower.match(/random number(?:\s+between\s+(\d+)\s+and\s+(\d+))?/);
+  if(rngMatch){
+    const min=parseInt(rngMatch[1]||1), max=parseInt(rngMatch[2]||100);
+    const num=Math.floor(Math.random()*(max-min+1))+min;
+    playBeep(600,0.08); setTimeout(()=>playBeep(900,0.1),80);
+    return 'Your random number is '+num+', Mr. Ondrak.';
+  }
+  if(/^(roll|random|give me a number|pick a number)$/.test(lower)){
+    const num=Math.floor(Math.random()*100)+1;
+    return 'I rolled a '+num+', sir.';
+  }
+
+  // -- Stopwatch --
+  if(/^start stopwatch|stopwatch start/.test(lower)){
+    startStopwatch();
+    return 'Stopwatch started, Mr. Ondrak.';
+  }
+  if(/^stop stopwatch|stopwatch stop|pause stopwatch/.test(lower)){
+    stopStopwatch();
+    const m=Math.floor((stopwatchMs%3600000)/60000).toString().padStart(2,'0');
+    const s=Math.floor((stopwatchMs%60000)/1000).toString().padStart(2,'0');
+    return 'Stopwatch stopped at '+m+':'+s+', sir.';
+  }
+  if(/^reset stopwatch|stopwatch reset/.test(lower)){
+    resetStopwatch();
+    return 'Stopwatch reset, Mr. Ondrak.';
+  }
+
+  // -- Rickroll --
+  if(/^rick[.!?]?$/.test(lower.trim())){
+    window.open('https://www.youtube.com/watch?v=dQw4w9WgXcQ&autoplay=1','_blank');
+    playBeep(400,0.08); setTimeout(()=>playBeep(600,0.1),100);
+    return 'Never gonna give you up, Mr. Ondrak.';
+  }
+
+  // -- Weather & News --
+  if(/^(weather|what.*(weather|temperature)|how.*outside)/.test(lower)){
+    window.open('https://www.bom.gov.au/places/wa/perth/','_blank');
+    return 'Opening the Bureau of Meteorology for Perth, Mr. Ondrak.';
+  }
+  if(/^(news|headlines|what.*happening|latest news|show.*news)/.test(lower)){
+    window.open('https://www.news.com.au','_blank');
+    return 'Pulling up the latest headlines for you, Mr. Ondrak.';
   }
 
   // -- Engage sequence --
