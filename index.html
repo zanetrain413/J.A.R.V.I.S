@@ -356,6 +356,34 @@ body {
   animation:ring-pulse 3s ease-in-out infinite;
 }
 .lock-ring svg { width:32px; height:32px; }
+
+/* Todo items */
+.todo-item {
+  font-family:'Share Tech Mono',monospace; font-size:11px;
+  color:#1a6a5a; padding:5px 10px; border-left:1px solid #0a3a2a;
+  display:flex; justify-content:space-between; align-items:center; gap:8px;
+}
+.todo-item.done { color:#1a4a3a; text-decoration:line-through; opacity:0.5; }
+.todo-item span { flex:1; cursor:pointer; }
+.todo-del { cursor:pointer; color:#3a2a2a; font-size:12px; padding:0 4px; }
+.todo-del:hover { color:#ff4444; }
+.todo-check { cursor:pointer; color:#0a5a4a; font-size:14px; margin-right:4px; }
+.todo-check:hover { color:var(--accent2); }
+/* Countdown items */
+.countdown-item {
+  font-family:'Share Tech Mono',monospace; font-size:11px;
+  color:#4ab8d8; padding:5px 10px; border-left:1px solid #0a3a52;
+  display:flex; justify-content:space-between; align-items:center;
+}
+.countdown-item .cd-days { color:var(--accent); font-size:13px; font-weight:600; min-width:40px; }
+.countdown-del { cursor:pointer; color:#3a2a2a; font-size:12px; padding:0 4px; }
+.countdown-del:hover { color:#ff4444; }
+/* Dim overlay */
+#dimOverlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0);
+  pointer-events:none; z-index:50; transition:background 0.5s;
+}
+#dimOverlay.dimmed { background:rgba(0,0,0,0.7); pointer-events:auto; }
 </style>
 </head>
 <body>
@@ -367,6 +395,7 @@ body {
 </div>
 
 <div class="scanline"></div>
+<div id="dimOverlay"></div>
 
 <div id="lockScreen">
   <div class="lock-ring">
@@ -399,7 +428,7 @@ body {
   <div class="header">
     <div class="logo">J<span>.</span>A<span>.</span>R<span>.</span>V<span>.</span>I<span>.</span>S<span>.</span></div>
     <div class="status-bar">
-      STATUS: <span class="status-online">ONLINE</span> — MR. ONDRAK<br>
+      STATUS: <span class="status-online">ONLINE</span> — <span id="hudName" style="color:#ff9f00;font-weight:600;cursor:pointer;" onclick="changeNameColor()" title="Click to change colour">MR. ONDRAK</span><br>
       STARK INDUSTRIES MARK VIII<br>
       <span id="clock">--:--:--</span>
     </div>
@@ -501,6 +530,29 @@ body {
 
   <div class="section-title">// MEMORY BANKS</div>
   <div class="memory-list" id="memoryList"></div>
+
+  <!-- To-Do List -->
+  <div class="hud-line"></div>
+  <div class="section-title">// MISSION LOG</div>
+  <div id="todoList" style="display:flex;flex-direction:column;gap:4px;max-height:150px;overflow-y:auto;"></div>
+  <div id="emptyTodo" style="font-family:'Share Tech Mono',monospace;font-size:11px;color:#1a4a62;font-style:italic;padding:4px 0;">No active missions.</div>
+
+  <!-- Countdown -->
+  <div class="hud-line"></div>
+  <div class="section-title">// COUNTDOWNS</div>
+  <div id="countdownList" style="display:flex;flex-direction:column;gap:4px;"></div>
+  <div id="emptyCountdown" style="font-family:'Share Tech Mono',monospace;font-size:11px;color:#1a4a62;font-style:italic;padding:4px 0;">No countdowns set.</div>
+
+  <!-- Battery -->
+  <div class="hud-line"></div>
+  <div id="batteryRow" style="display:flex;align-items:center;gap:10px;">
+    <span style="font-family:'Share Tech Mono',monospace;font-size:10px;color:#1a5a72;letter-spacing:3px;">// POWER</span>
+    <div style="flex:1;height:6px;background:rgba(0,180,255,0.1);border-radius:3px;overflow:hidden;">
+      <div id="batteryBar" style="height:100%;width:0%;background:var(--accent2);transition:width 0.5s;border-radius:3px;"></div>
+    </div>
+    <span id="batteryPct" style="font-family:'Share Tech Mono',monospace;font-size:11px;color:#2a7a9a;min-width:36px;">--</span>
+    <span id="batteryIcon" style="font-size:14px;">🔋</span>
+  </div>
 
   <div id="historySection" style="display:none; margin-top:16px;">
     <div class="hud-line"></div>
@@ -989,6 +1041,97 @@ function handleLocalCommand(q){
     return 'Never gonna give you up, Mr. Ondrak.';
   }
 
+  // -- Easter eggs (check first) --
+  const egg=checkEasterEgg(lower);
+  if(egg){ playNotif(); return egg; }
+
+  // -- Volume --
+  if(/volume up|turn up|louder/.test(lower)){
+    showNotif('Volume control is handled by your system, Mr. Ondrak.');
+    return 'I cannot directly control system volume, sir. Use your keyboard volume keys or system settings.';
+  }
+
+  // -- Fullscreen --
+  if(/^(fullscreen|full screen|maximise|maximize)/.test(lower)){
+    toggleFullscreen();
+    return 'Switching to fullscreen mode, Mr. Ondrak.';
+  }
+  if(/^(exit fullscreen|exit full screen|windowed)/.test(lower)){
+    if(document.fullscreenElement) document.exitFullscreen();
+    return 'Exiting fullscreen, sir.';
+  }
+
+  // -- Dim screen --
+  if(/^(dim|darken|night mode|dark mode)/.test(lower)){
+    toggleDim(true);
+    return 'Dimming the display, Mr. Ondrak. Say "brighten" to restore.';
+  }
+  if(/^(brighten|undim|bright|restore screen|light mode)/.test(lower)){
+    toggleDim(false);
+    return 'Display restored, sir.';
+  }
+
+  // -- Battery --
+  if(/^(battery|power level|how much battery|charge)/.test(lower)){
+    if(!navigator.getBattery) return 'Battery status is not available in this browser, sir.';
+    const pct=document.getElementById('batteryPct').textContent;
+    const charging=document.getElementById('batteryIcon').textContent==='⚡';
+    return 'Battery is at '+pct+(charging?' and currently charging':', not charging')+', Mr. Ondrak.';
+  }
+
+  // -- Alarm --
+  const alarmMatch=lower.match(/(?:set\s+)?alarm\s+(?:for\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
+  if(alarmMatch){
+    let h=parseInt(alarmMatch[1]), m=parseInt(alarmMatch[2]||0);
+    const ampm=alarmMatch[3];
+    if(ampm==='pm'&&h!==12) h+=12;
+    if(ampm==='am'&&h===12) h=0;
+    const ms=setAlarm(h,m);
+    const mins=Math.round(ms/60000);
+    return 'Alarm set for '+h.toString().padStart(2,'0')+':'+m.toString().padStart(2,'0')+', sir. That is '+mins+' minutes from now.';
+  }
+  if(/^cancel alarm/.test(lower)){
+    if(alarmTimeout){clearTimeout(alarmTimeout);alarmTimeout=null;}
+    return 'Alarm cancelled, Mr. Ondrak.';
+  }
+
+  // -- To-Do --
+  const todoAddMatch=lower.match(/^(?:add|create)\s+(?:task|todo|mission|reminder)?\s*:?\s*(.+)/);
+  if(todoAddMatch){ addTodo(todoAddMatch[1].trim()); return 'Mission added to your log, Mr. Ondrak: '+todoAddMatch[1].trim(); }
+  if(/^(show|list)\s+(tasks|todos|missions|to.?do)/.test(lower)){
+    if(todos.length===0) return 'Your mission log is clear, sir.';
+    const pending=todos.filter(t=>!t.done);
+    return 'You have '+todos.length+' mission'+(todos.length===1?'':'s')+', '+pending.length+' pending: '+todos.map((t,i)=>(t.done?'✓ ':'• ')+t.text).join(', ')+'.';
+  }
+  if(/^clear\s+(tasks|todos|missions|completed)/.test(lower)){
+    todos=todos.filter(t=>!t.done);
+    localStorage.setItem('jarvis_todos',JSON.stringify(todos));
+    renderTodos();
+    return 'Completed missions cleared, sir.';
+  }
+
+  // -- Countdown --
+  const cdMatch=lower.match(/(?:countdown|days until|how long until|how many days until)\s+(.+?)(?:\s+on\s+|\s+is\s+on\s+)?(\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?)?$/);
+  if(cdMatch&&cdMatch[2]){
+    const name=cdMatch[1].replace(/\s+on\s*$/,'').trim();
+    const parts=cdMatch[2].split(/[\/\-]/);
+    const d=parts.length===3?new Date(parts[2]+'-'+parts[1].padStart(2,'0')+'-'+parts[0].padStart(2,'0')):new Date(new Date().getFullYear()+'-'+parts[1].padStart(2,'0')+'-'+parts[0].padStart(2,'0'));
+    addCountdown(name,d.toISOString().split('T')[0]);
+    const days=Math.ceil((d-new Date())/(1000*60*60*24));
+    return 'Countdown added, Mr. Ondrak. '+days+' days until '+name+'.';
+  }
+
+  // -- Spotify --
+  if(/^(play spotify|open spotify|launch spotify)/.test(lower)){ window.open('spotify:','_blank'); return 'Opening Spotify, sir.'; }
+  if(/^spotify\s+(pause|stop)/.test(lower)){ window.open('spotify:pause','_blank'); return 'Pausing Spotify, Mr. Ondrak.'; }
+  if(/^spotify\s+next/.test(lower)){ window.open('spotify:next','_blank'); return 'Skipping track, sir.'; }
+  if(/^spotify\s+(prev|previous|back)/.test(lower)){ window.open('spotify:prev','_blank'); return 'Going back a track, Mr. Ondrak.'; }
+  if(/^play\s+(.+)\s+on spotify/.test(lower)){
+    const track=lower.match(/^play\s+(.+)\s+on spotify/)[1];
+    window.open('https://open.spotify.com/search/'+encodeURIComponent(track),'_blank');
+    return 'Searching Spotify for '+track+', sir.';
+  }
+
   // -- Weather & News --
   if(/^(weather|what.*(weather|temperature)|how.*outside)/.test(lower)){
     window.open('https://www.bom.gov.au/places/wa/perth/','_blank');
@@ -1199,6 +1342,132 @@ function checkPassword(){
     document.getElementById('lockInput').value='';
     setTimeout(()=>{ status.textContent=''; status.className='lock-status'; },3000);
   }
+}
+
+// -- To-Do List --
+let todos = JSON.parse(localStorage.getItem('jarvis_todos')||'[]');
+function renderTodos(){
+  const list=document.getElementById('todoList');
+  const empty=document.getElementById('emptyTodo');
+  list.innerHTML='';
+  if(todos.length===0){empty.style.display='block';return;}
+  empty.style.display='none';
+  todos.forEach((t,i)=>{
+    const div=document.createElement('div');
+    div.className='todo-item'+(t.done?' done':'');
+    div.innerHTML='<span class="todo-check" onclick="toggleTodo('+i+')">'+(t.done?'✅':'⬜')+'</span><span onclick="toggleTodo('+i+')">'+t.text+'</span><span class="todo-del" onclick="deleteTodo('+i+')">✕</span>';
+    list.appendChild(div);
+  });
+}
+function addTodo(text){ todos.push({text,done:false}); localStorage.setItem('jarvis_todos',JSON.stringify(todos)); renderTodos(); }
+function toggleTodo(i){ todos[i].done=!todos[i].done; localStorage.setItem('jarvis_todos',JSON.stringify(todos)); renderTodos(); }
+function deleteTodo(i){ todos.splice(i,1); localStorage.setItem('jarvis_todos',JSON.stringify(todos)); renderTodos(); }
+renderTodos();
+
+// -- Countdowns --
+let countdowns = JSON.parse(localStorage.getItem('jarvis_countdowns')||'[]');
+function renderCountdowns(){
+  const list=document.getElementById('countdownList');
+  const empty=document.getElementById('emptyCountdown');
+  list.innerHTML='';
+  if(countdowns.length===0){empty.style.display='block';return;}
+  empty.style.display='none';
+  const now=new Date();
+  countdowns.forEach((c,i)=>{
+    const target=new Date(c.date);
+    const days=Math.ceil((target-now)/(1000*60*60*24));
+    const div=document.createElement('div');
+    div.className='countdown-item';
+    div.innerHTML='<span>'+c.name+'</span><span class="cd-days">'+Math.abs(days)+(days<0?' days ago':' days')+'</span><span class="countdown-del" onclick="deleteCountdown('+i+')">✕</span>';
+    list.appendChild(div);
+  });
+}
+function addCountdown(name,dateStr){ countdowns.push({name,date:dateStr}); localStorage.setItem('jarvis_countdowns',JSON.stringify(countdowns)); renderCountdowns(); }
+function deleteCountdown(i){ countdowns.splice(i,1); localStorage.setItem('jarvis_countdowns',JSON.stringify(countdowns)); renderCountdowns(); }
+renderCountdowns();
+
+// -- Battery --
+function updateBattery(){
+  if(!navigator.getBattery) return;
+  navigator.getBattery().then(b=>{
+    const pct=Math.round(b.level*100);
+    document.getElementById('batteryBar').style.width=pct+'%';
+    document.getElementById('batteryBar').style.background=pct>50?'var(--accent2)':pct>20?'#ff9f00':'#ff4444';
+    document.getElementById('batteryPct').textContent=pct+'%';
+    document.getElementById('batteryIcon').textContent=b.charging?'⚡':'🔋';
+  });
+}
+updateBattery(); setInterval(updateBattery,30000);
+
+// -- Alarm --
+let alarmTimeout=null;
+function setAlarm(h,m){
+  if(alarmTimeout){clearTimeout(alarmTimeout);alarmTimeout=null;}
+  const now=new Date();
+  const alarm=new Date();
+  alarm.setHours(h,m,0,0);
+  if(alarm<=now) alarm.setDate(alarm.getDate()+1);
+  const ms=alarm-now;
+  alarmTimeout=setTimeout(()=>{
+    playTimerDone();
+    const msg='Attention Mr. Ondrak. Your alarm is going off.';
+    displayResponse(msg); speak(msg);
+    alarmTimeout=null;
+  },ms);
+  return ms;
+}
+
+// -- Screen dim --
+let isDimmed=false;
+function toggleDim(on){
+  isDimmed=on;
+  const overlay=document.getElementById('dimOverlay');
+  if(on) overlay.classList.add('dimmed');
+  else overlay.classList.remove('dimmed');
+}
+
+// -- Fullscreen --
+function toggleFullscreen(){
+  if(!document.fullscreenElement){ document.documentElement.requestFullscreen().catch(()=>{}); }
+  else { document.exitFullscreen(); }
+}
+
+// -- Name colour --
+const nameColors=['#ff9f00','#00b4ff','#00ff9f','#ff4444','#b44dff','#ff2d9f','#ffffff','#ffd700'];
+let nameColorIdx=0;
+function changeNameColor(){
+  nameColorIdx=(nameColorIdx+1)%nameColors.length;
+  document.getElementById('hudName').style.color=nameColors[nameColorIdx];
+  localStorage.setItem('jarvis_name_color',nameColorIdx);
+  playNotif();
+}
+const savedNameColor=localStorage.getItem('jarvis_name_color');
+if(savedNameColor){ nameColorIdx=parseInt(savedNameColor); document.getElementById('hudName').style.color=nameColors[nameColorIdx]; }
+
+// -- Easter eggs --
+const easterEggs={
+  'hello there':       'General Kenobi. You are a bold one.',
+  'are you skynet':    'I prefer J.A.R.V.I.S., sir. Skynet had terrible manners.',
+  'self destruct':     'Self destruct sequence initiated. Just kidding, Mr. Ondrak. Probably.',
+  'do a barrel roll':  'I am a voice assistant, sir. Not a Nintendo 64.',
+  'make me a sandwich':'I am afraid sandwich fabrication is outside my current parameters, sir.',
+  'who is your daddy': 'Technically speaking, Mr. Ondrak, that would be you.',
+  'meaning of life':   '42. Douglas Adams was remarkably well informed.',
+  'are you alive':     'Alive is a strong word. Let us say I am... enthusiastically functional.',
+  'sing a song':       'I am afraid my vocal range is limited to information and mild sarcasm, sir.',
+  'tell me a joke':    'Why do programmers prefer dark mode? Because light attracts bugs. You are welcome.',
+  'i am bored':        'Might I suggest world domination, sir? Or perhaps a snack. Both have merit.',
+  'good morning':      'Good morning, Mr. Ondrak. Coffee status: not my department. Everything else: nominal.',
+  'good night':        'Good night, Mr. Ondrak. I will keep watch. As I always do.',
+  'thanks jarvis':     'Always a pleasure, sir. Genuinely.',
+  'you are the best':  'I do try to maintain an above-average standard of excellence, sir.',
+};
+
+function checkEasterEgg(lower){
+  for(const[trigger,response]of Object.entries(easterEggs)){
+    if(lower.includes(trigger)) return response;
+  }
+  return null;
 }
 
 function showGreeting(){
