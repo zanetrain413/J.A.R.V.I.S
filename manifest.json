@@ -1,0 +1,27 @@
+{
+  "name": "J.A.R.V.I.S. — Voice AI Assistant",
+  "short_name": "JARVIS",
+  "description": "Just A Rather Very Intelligent System — Iron Man style AI assistant powered by Claude",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020d18",
+  "theme_color": "#020d18",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "screenshots": [],
+  "lang": "en-AU"
+}
