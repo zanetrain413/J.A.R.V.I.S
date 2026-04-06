@@ -113,6 +113,7 @@ body{
   gap:8px;padding:8px;
   opacity:0;transition:opacity 0.8s;
   overflow:hidden;
+  min-height:100vh;
 }
 #hud.visible{opacity:1;}
 
@@ -156,7 +157,7 @@ body{
 #hudName{color:#ff9f00;cursor:pointer;font-weight:600;}
 
 /* ── Left Column ── */
-#leftCol{grid-column:1;grid-row:2;display:flex;flex-direction:column;gap:8px;overflow-y:auto;scrollbar-width:none;}
+#leftCol{grid-column:1;grid-row:2;display:flex;flex-direction:column;gap:8px;overflow-y:auto;scrollbar-width:none;min-width:0;}
 #leftCol::-webkit-scrollbar{display:none;}
 
 /* Weather panel */
@@ -191,7 +192,7 @@ body{
 .countdown-del:hover{color:#ff4444;}
 
 /* ── Centre Column ── */
-#centreCol{grid-column:2;grid-row:2;display:flex;flex-direction:column;gap:8px;}
+#centreCol{grid-column:2;grid-row:2;display:flex;flex-direction:column;gap:8px;min-width:0;overflow:hidden;}
 
 /* Arc reactor */
 #reactorPanel{
@@ -250,16 +251,16 @@ body{
 /* Transcript & Response */
 #transcriptPanel{
   background:rgba(0,20,40,0.5);border:1px solid var(--bdr);border-radius:4px;
-  padding:10px 14px;min-height:40px;
-  font-family:'Share Tech Mono',monospace;font-size:12px;color:#4ab8d8;line-height:1.5;position:relative;
+  padding:6px 14px;min-height:30px;
+  font-family:'Share Tech Mono',monospace;font-size:11px;color:#4ab8d8;line-height:1.4;position:relative;
 }
 #transcriptPanel::after{content:'YOU';position:absolute;top:6px;right:10px;font-size:8px;color:#1a5a72;letter-spacing:2px;}
 
 #responsePanel{
-  flex:1;background:rgba(0,10,25,0.6);border:1px solid var(--bdr);
+  flex:0 0 120px;max-height:120px;background:rgba(0,10,25,0.6);border:1px solid var(--bdr);
   border-top:1px solid rgba(0,180,255,0.2);border-radius:4px;
-  padding:12px 14px;overflow-y:auto;
-  font-size:14px;line-height:1.7;color:#a0dff5;position:relative;
+  padding:10px 14px;overflow-y:auto;
+  font-size:13px;line-height:1.6;color:#a0dff5;position:relative;
   scrollbar-width:thin;scrollbar-color:var(--bdr) transparent;
 }
 #responsePanel::after{content:'J.A.R.V.I.S.';position:absolute;top:8px;right:10px;font-size:8px;font-family:'Share Tech Mono',monospace;color:rgba(0,180,255,0.4);letter-spacing:2px;}
@@ -298,7 +299,7 @@ body{
 .send-btn:hover{background:rgba(0,180,255,0.2);}
 
 /* ── Right Column ── */
-#rightCol{grid-column:3;grid-row:2;display:flex;flex-direction:column;gap:8px;overflow-y:auto;scrollbar-width:none;}
+#rightCol{grid-column:3;grid-row:2;display:flex;flex-direction:column;gap:8px;overflow-y:auto;scrollbar-width:none;min-width:0;}
 #rightCol::-webkit-scrollbar{display:none;}
 
 /* Todo */
@@ -528,10 +529,10 @@ body{
   <div id="centreCol">
 
     <!-- Reactor + controls -->
-    <div class="panel" id="reactorPanel">
+    <div class="panel" id="reactorPanel" style="display:flex;align-items:center;justify-content:center;">
       <div style="display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap;">
-        <div class="reactor-rings" style="position:relative;width:220px;height:220px;display:flex;align-items:center;justify-content:center;">
-          <canvas id="sphereCanvas" style="position:absolute;inset:0;width:220px;height:220px;border-radius:50%;cursor:pointer;" onclick="toggleListening()"></canvas>
+        <div class="reactor-rings" style="position:relative;width:280px;height:280px;display:flex;align-items:center;justify-content:center;">
+          <canvas id="sphereCanvas" style="position:absolute;inset:0;width:280px;height:280px;border-radius:50%;cursor:pointer;" onclick="toggleListening()"></canvas>
           <div style="position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;pointer-events:none;z-index:3;">
             <svg class="mic-icon" viewBox="0 0 24 24" fill="none" style="width:28px;height:28px;">
               <path d="M12 2C10.343 2 9 3.343 9 5V12C9 13.657 10.343 15 12 15C13.657 15 15 13.657 15 12V5C15 3.343 13.657 2 12 2Z" id="micPath" fill="#00b4ff"/>
@@ -903,7 +904,7 @@ function toggleWake(){
 // -- TTS --
 function speak(text){
   if(!speechEnabled)return;speechSynthesis.cancel();
-  const clean=text.replace(/[*_#`]/g,'').substring(0,1400);
+  const clean=text.replace(/[*_#`]/g,'').split(/[.!?]/)[0].trim().substring(0,200);
   const utter=new SpeechSynthesisUtterance(clean);
   utter.voice=selectedVoice||null;utter.rate=1.05;utter.pitch=0.78;utter.volume=1;
   utter.onstart=()=>{micBtn.className='mic-btn speaking';micLabel.textContent='SPEAKING';responseEl.classList.add('speaking-now');if(window._setSphereState)window._setSphereState('speaking');};
@@ -1246,10 +1247,10 @@ document.getElementById('lockInput').addEventListener('keypress',e=>{if(e.key===
 (function(){
   const canvas=document.getElementById('sphereCanvas');
   if(!canvas)return;
-  const SIZE=220;
+  const SIZE=280;
   canvas.width=SIZE; canvas.height=SIZE;
   const ctx=canvas.getContext('2d');
-  const NDOTS=280,R=95;
+  const NDOTS=500,R=120;
   const dots=[];
 
   for(let i=0;i<NDOTS;i++){
@@ -1276,7 +1277,7 @@ document.getElementById('lockInput').addEventListener('keypress',e=>{if(e.key===
 
   function draw(){
     ctx.clearRect(0,0,SIZE,SIZE);
-    angle+=state==='thinking'?0.006:state==='listening'?0.004:state==='speaking'?0.008:0.0018;
+    angle+=state==='thinking'?0.012:state==='listening'?0.009:state==='speaking'?0.015:0.006;
 
     // dark bg circle
     ctx.beginPath();
@@ -1312,11 +1313,11 @@ document.getElementById('lockInput').addEventListener('keypress',e=>{if(e.key===
     });
 
     // Outer glow ring
-    const glow=ctx.createRadialGradient(SIZE/2,SIZE/2,R+2,SIZE/2,SIZE/2,R+22);
+    const glow=ctx.createRadialGradient(SIZE/2,SIZE/2,R+2,SIZE/2,SIZE/2,R+28);
     const glowAlpha=state==='listening'?0.5:state==='speaking'?0.7:state==='thinking'?0.4:0.15;
     glow.addColorStop(0,col+Math.round(glowAlpha*255).toString(16).padStart(2,'0'));
     glow.addColorStop(1,'transparent');
-    ctx.beginPath();ctx.arc(SIZE/2,SIZE/2,R+22,0,Math.PI*2);
+    ctx.beginPath();ctx.arc(SIZE/2,SIZE/2,R+28,0,Math.PI*2);
     ctx.fillStyle=glow;ctx.fill();
 
     requestAnimationFrame(draw);
