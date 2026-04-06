@@ -30,18 +30,8 @@ body{
   overflow:hidden;
 }
 
-/* ── Animated background grid ── */
-body::before{
-  content:'';
-  position:fixed;inset:0;
-  background-image:
-    linear-gradient(rgba(0,180,255,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,180,255,0.03) 1px, transparent 1px);
-  background-size:40px 40px;
-  animation:gridMove 20s linear infinite;
-  pointer-events:none;z-index:0;
-}
-@keyframes gridMove{from{background-position:0 0}to{background-position:40px 40px}}
+/* ── Rotating sphere canvas ── */
+#sphereCanvas{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.35;}
 
 .scanline{
   position:fixed;inset:0;
@@ -416,6 +406,16 @@ body::before{
   color:var(--a);cursor:pointer;border-radius:2px;
 }
 
+/* Theme name buttons */
+.theme-name-btn{
+  font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;
+  padding:4px 8px;border-radius:2px;cursor:pointer;
+  border:1px solid var(--bdr);background:transparent;color:#2a7a9a;
+  transition:all 0.2s;-webkit-tap-highlight-color:transparent;
+}
+.theme-name-btn:hover{border-color:var(--a);color:var(--a);}
+.theme-name-btn.active{border-color:var(--a);color:var(--a);background:rgba(0,180,255,0.08);}
+
 /* Scrollbar */
 ::-webkit-scrollbar{width:3px;}
 ::-webkit-scrollbar-track{background:transparent;}
@@ -457,6 +457,7 @@ body::before{
   <button id="lockSubmit" onclick="checkPassword()">AUTHENTICATE</button>
 </div>
 
+<canvas id="sphereCanvas"></canvas>
 <div class="scanline"></div>
 <div id="dimOverlay"></div>
 
@@ -603,16 +604,15 @@ body::before{
         <button class="ctrl-btn" onclick="clearAll()">Clear</button>
       </div>
       <select class="voice-select" id="voiceSelect" style="margin-bottom:8px;"><option value="">— Voice —</option></select>
-      <div class="theme-row">
-        <span class="theme-label">THEME</span>
-        <div class="theme-dot td-blue active"     onclick="setTheme('t-blue')"    title="Blue"></div>
-        <div class="theme-dot td-ironman"          onclick="setTheme('t-ironman')" title="Iron Man"></div>
-        <div class="theme-dot td-black"            onclick="setTheme('t-black')"   title="Black/Red"></div>
-        <div class="theme-dot td-green"            onclick="setTheme('t-green')"   title="Green"></div>
-        <div class="theme-dot td-purple"           onclick="setTheme('t-purple')"  title="Purple"></div>
-        <div class="theme-dot td-cyberpink"        onclick="setTheme('t-cyberpink')" title="Pink"></div>
-        <div class="theme-dot td-military"         onclick="setTheme('t-military')" title="Military"></div>
-        <div class="theme-dot td-teal"             onclick="setTheme('t-teal')"    title="Teal"></div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;">
+        <button class="theme-name-btn active" id="tn-t-blue"     onclick="setTheme('t-blue')">BLUE</button>
+        <button class="theme-name-btn"        id="tn-t-ironman"  onclick="setTheme('t-ironman')">IRON MAN</button>
+        <button class="theme-name-btn"        id="tn-t-black"    onclick="setTheme('t-black')">GHOST</button>
+        <button class="theme-name-btn"        id="tn-t-green"    onclick="setTheme('t-green')">MATRIX</button>
+        <button class="theme-name-btn"        id="tn-t-purple"   onclick="setTheme('t-purple')">NEXUS</button>
+        <button class="theme-name-btn"        id="tn-t-cyberpink" onclick="setTheme('t-cyberpink')">NEON</button>
+        <button class="theme-name-btn"        id="tn-t-military" onclick="setTheme('t-military')">MILITARY</button>
+        <button class="theme-name-btn"        id="tn-t-teal"     onclick="setTheme('t-teal')">OCEAN</button>
       </div>
     </div>
 
@@ -789,9 +789,9 @@ const themeVars={
 };
 function setTheme(t){
   document.body.className=t;
-  document.querySelectorAll('.theme-dot').forEach(d=>d.classList.remove('active'));
-  const dot=document.querySelector('.theme-dot.'+themeMap[t]);
-  if(dot)dot.classList.add('active');
+  document.querySelectorAll('.theme-name-btn').forEach(d=>d.classList.remove('active'));
+  const btn=document.getElementById('tn-'+t);
+  if(btn)btn.classList.add('active');
   // Apply CSS vars
   const vars=themeVars[t]||themeVars['t-blue'];
   vars.split(';').filter(Boolean).forEach(v=>{
@@ -1244,6 +1244,71 @@ function checkPassword(){
 document.getElementById('lockInput').addEventListener('keypress',e=>{if(e.key==='Enter')checkPassword();});
 
 // -- Service Worker --
+// -- Rotating sphere of dots --
+(function(){
+  const canvas=document.getElementById('sphereCanvas');
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  let W,H,dots=[],animId;
+  const NDOTS=320,RADIUS=Math.min(window.innerWidth,window.innerHeight)*0.38;
+
+  function resize(){
+    W=canvas.width=window.innerWidth;
+    H=canvas.height=window.innerHeight;
+  }
+  resize();window.addEventListener('resize',resize);
+
+  // Generate dots on sphere surface using fibonacci sphere
+  for(let i=0;i<NDOTS;i++){
+    const phi=Math.acos(1-2*(i+0.5)/NDOTS);
+    const theta=Math.PI*(1+Math.sqrt(5))*i;
+    dots.push({
+      ox:Math.sin(phi)*Math.cos(theta),
+      oy:Math.sin(phi)*Math.sin(theta),
+      oz:Math.cos(phi),
+      size:Math.random()*1.5+0.5
+    });
+  }
+
+  let angle=0;
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    angle+=0.002;
+    const cx=W/2,cy=H/2;
+    const r=Math.min(W,H)*0.36;
+
+    // Get accent colour from CSS
+    const accentHex=getComputedStyle(document.documentElement).getPropertyValue('--a').trim()||'#00b4ff';
+
+    const projected=dots.map(d=>{
+      // Rotate around Y axis
+      const x=d.ox*Math.cos(angle)-d.oz*Math.sin(angle);
+      const z=d.ox*Math.sin(angle)+d.oz*Math.cos(angle);
+      const y=d.oy;
+      // Perspective
+      const scale=r/(r-(z*r*0.5));
+      return {
+        sx:cx+x*r*scale,
+        sy:cy+y*r*scale,
+        z:z,
+        size:d.size,
+        alpha:Math.max(0,(z+1)/2)
+      };
+    }).sort((a,b)=>a.z-b.z);
+
+    projected.forEach(p=>{
+      const alpha=p.alpha*0.7+0.05;
+      ctx.beginPath();
+      ctx.arc(p.sx,p.sy,p.size*p.alpha+0.3,0,Math.PI*2);
+      ctx.fillStyle=accentHex+(Math.round(alpha*255).toString(16).padStart(2,'0'));
+      ctx.fill();
+    });
+
+    animId=requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 
 window.addEventListener('load',()=>setTimeout(runBoot,200));
