@@ -81,7 +81,7 @@ body{
 #lockStatus.granted{color:var(--a2);}
 #lockInput{
   font-family:'Share Tech Mono',monospace;font-size:13px;
-  background:rgba(0,20,40,0.7);border:1px solid var(--bdr);
+  background:rgba(0,20,40,0.7);border:none;
   color:var(--text);padding:10px 14px;border-radius:2px;outline:none;
   width:100%;max-width:340px;margin-bottom:10px;text-align:center;
 }
@@ -98,7 +98,7 @@ body{
 #lockSubmit{
   font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;
   letter-spacing:2px;padding:10px 30px;
-  background:rgba(0,180,255,0.1);border:1px solid #0a5a7a;
+  background:rgba(0,180,255,0.15);border:none;
   color:var(--a);cursor:pointer;border-radius:2px;transition:all 0.2s;
   width:100%;max-width:340px;
 }
@@ -112,23 +112,20 @@ body{
   grid-template-rows:auto 1fr auto;
   gap:8px;padding:8px;
   opacity:0;transition:opacity 0.8s;
-  overflow:hidden;
-  min-height:100vh;
+  height:100vh;
+  box-sizing:border-box;
 }
 #hud.visible{opacity:1;}
 
 /* ── Panel base ── */
 .panel{
   background:var(--panel);
-  border:1px solid var(--bdr);
+  border:none;
   border-radius:4px;
   padding:10px 12px;
   position:relative;
   backdrop-filter:blur(4px);
 }
-.panel::before,.panel::after{content:'';position:absolute;width:8px;height:8px;}
-.panel::before{top:0;left:0;border-top:1px solid var(--a);border-left:1px solid var(--a);}
-.panel::after{bottom:0;right:0;border-bottom:1px solid var(--a);border-right:1px solid var(--a);}
 .panel-title{
   font-family:'Share Tech Mono',monospace;font-size:9px;
   color:rgba(0,180,255,0.5);letter-spacing:3px;
@@ -139,7 +136,7 @@ body{
 #topBar{
   grid-column:1/-1;
   display:flex;align-items:center;justify-content:space-between;
-  background:var(--panel);border:1px solid var(--bdr);border-radius:4px;
+  background:var(--panel);border:none;border-radius:4px;
   padding:8px 16px;
   backdrop-filter:blur(4px);
 }
@@ -192,7 +189,7 @@ body{
 .countdown-del:hover{color:#ff4444;}
 
 /* ── Centre Column ── */
-#centreCol{grid-column:2;grid-row:2;display:flex;flex-direction:column;gap:8px;min-width:0;overflow:hidden;}
+#centreCol{grid-column:2;grid-row:2;display:flex;flex-direction:column;gap:8px;min-width:0;}
 
 /* Arc reactor */
 #reactorPanel{
@@ -250,15 +247,14 @@ body{
 
 /* Transcript & Response */
 #transcriptPanel{
-  background:rgba(0,20,40,0.5);border:1px solid var(--bdr);border-radius:4px;
+  background:rgba(0,20,40,0.5);border:none;border-radius:4px;
   padding:6px 14px;min-height:30px;
   font-family:'Share Tech Mono',monospace;font-size:11px;color:#4ab8d8;line-height:1.4;position:relative;
 }
 #transcriptPanel::after{content:'YOU';position:absolute;top:6px;right:10px;font-size:8px;color:#1a5a72;letter-spacing:2px;}
 
 #responsePanel{
-  flex:0 0 120px;max-height:120px;background:rgba(0,10,25,0.6);border:1px solid var(--bdr);
-  border-top:1px solid rgba(0,180,255,0.2);border-radius:4px;
+  flex:0 0 120px;max-height:120px;background:rgba(0,10,25,0.6);border:none;border-radius:4px;
   padding:10px 14px;overflow-y:auto;
   font-size:13px;line-height:1.6;color:#a0dff5;position:relative;
   scrollbar-width:thin;scrollbar-color:var(--bdr) transparent;
@@ -285,7 +281,7 @@ body{
 .input-row{display:flex;gap:6px;flex-shrink:0;}
 .text-input{
   flex:1;font-family:'Share Tech Mono',monospace;font-size:12px;
-  background:rgba(0,20,40,0.7);border:1px solid var(--bdr);
+  background:rgba(0,20,40,0.7);border:none;
   color:var(--text);padding:8px 12px;border-radius:2px;outline:none;
 }
 .text-input:focus{border-color:rgba(0,180,255,0.3);}
@@ -293,7 +289,7 @@ body{
 .send-btn{
   font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;
   letter-spacing:1px;padding:8px 16px;
-  background:rgba(0,180,255,0.1);border:1px solid #0a5a7a;
+  background:rgba(0,180,255,0.15);border:none;
   color:var(--a);cursor:pointer;border-radius:2px;transition:all 0.2s;
 }
 .send-btn:hover{background:rgba(0,180,255,0.2);}
@@ -368,7 +364,7 @@ body{
 /* Bottom bar */
 #bottomBar{
   grid-column:1/-1;
-  background:var(--panel);border:1px solid var(--bdr);border-radius:4px;
+  background:var(--panel);border:none;border-radius:4px;
   padding:6px 12px;
   display:flex;align-items:center;gap:16px;
   font-family:'Share Tech Mono',monospace;font-size:9px;color:#2a7a9a;
@@ -529,7 +525,7 @@ body{
   <div id="centreCol">
 
     <!-- Reactor + controls -->
-    <div class="panel" id="reactorPanel" style="display:flex;align-items:center;justify-content:center;">
+    <div class="panel" id="reactorPanel" style="display:flex;align-items:center;justify-content:center;margin-top:30px;background:transparent;">
       <div style="display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap;">
         <div class="reactor-rings" style="position:relative;width:280px;height:280px;display:flex;align-items:center;justify-content:center;">
           <canvas id="sphereCanvas" style="position:absolute;inset:0;width:280px;height:280px;border-radius:50%;cursor:pointer;" onclick="toggleListening()"></canvas>
@@ -563,6 +559,7 @@ body{
     </div>
 
     <!-- Transcript -->
+    <div style="flex:1;"></div>
     <div id="transcriptPanel"><span style="color:#1a4a62;font-style:italic;">Awaiting voice input...</span></div>
 
     <!-- Response -->
@@ -1260,7 +1257,10 @@ document.getElementById('lockInput').addEventListener('keypress',e=>{if(e.key===
       ox:Math.sin(phi)*Math.cos(theta),
       oy:Math.sin(phi)*Math.sin(theta),
       oz:Math.cos(phi),
-      size:Math.random()*1.8+0.4
+      size:Math.random()*1.8+0.4,
+      wobbleSpeed:Math.random()*0.02+0.005,
+      wobbleAmt:Math.random()*0.08+0.02,
+      wobbleOff:Math.random()*Math.PI*2
     });
   }
 
@@ -1286,14 +1286,16 @@ document.getElementById('lockInput').addEventListener('keypress',e=>{if(e.key===
     ctx.fill();
 
     // Get current accent colour
-    const accent=getComputedStyle(document.documentElement).getPropertyValue('--a').trim()||stateColors[state];
-    const col=stateColors[state]||accent;
+    const accent=getComputedStyle(document.documentElement).getPropertyValue('--a').trim()||'#00b4ff';
+    const col=state==='idle'?accent:(stateColors[state]||accent);
 
+    const t2=Date.now()*0.001;
     const projected=dots.map(d=>{
-      const cosA=Math.cos(angle),sinA=Math.sin(angle);
+      const wobble=Math.sin(t2*d.wobbleSpeed*60+d.wobbleOff)*d.wobbleAmt;
+      const cosA=Math.cos(angle+wobble),sinA=Math.sin(angle+wobble);
       const x=d.ox*cosA-d.oz*sinA;
       const z=d.ox*sinA+d.oz*cosA;
-      const y=d.oy;
+      const y=d.oy+Math.sin(t2*d.wobbleSpeed*40+d.wobbleOff)*d.wobbleAmt*0.5;
       const persp=1+z*0.35;
       return{
         sx:SIZE/2+x*R*persp,
