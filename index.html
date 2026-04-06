@@ -413,6 +413,54 @@ body{
 .theme-name-btn:hover{border-color:var(--a);color:var(--a);}
 .theme-name-btn.active{border-color:var(--a);color:var(--a);background:transparent;}
 
+
+/* Radar sweep */
+#radarCanvas{position:absolute;inset:0;width:340px;height:340px;border-radius:50%;pointer-events:none;z-index:3;}
+
+/* Voice visualiser */
+#voiceViz{
+  display:flex;align-items:center;justify-content:center;gap:2px;
+  height:40px;margin-top:6px;opacity:0;transition:opacity 0.3s;
+}
+#voiceViz.active{opacity:1;}
+#voiceViz .vbar{
+  width:3px;border-radius:3px;background:var(--a);
+  height:4px;transition:height 0.05s;
+}
+
+/* Typewriter cursor */
+.typewriter-cursor{display:inline-block;width:2px;height:1em;background:var(--a);margin-left:2px;animation:blink 0.8s ease infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* Command line input */
+#cmdLine{
+  position:fixed;bottom:40px;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:8px;
+  width:50%;max-width:600px;z-index:10;
+}
+#cmdLine::before{
+  content:'>';font-family:'Share Tech Mono',monospace;
+  font-size:14px;color:var(--a);
+}
+#cmdLineInput{
+  flex:1;font-family:'Share Tech Mono',monospace;font-size:13px;
+  background:transparent;border:none;border-bottom:1px solid var(--a);
+  color:var(--text);padding:6px 4px;outline:none;letter-spacing:1px;
+}
+#cmdLineInput::placeholder{color:rgba(0,180,255,0.3);}
+#cmdLineInput:focus{border-bottom-color:var(--a2);}
+
+/* Data lines canvas */
+#dataLinesCanvas{position:fixed;inset:0;pointer-events:none;z-index:1;opacity:0.4;}
+
+/* Mini globe */
+#miniGlobe{
+  position:fixed;bottom:50px;right:16px;
+  width:90px;height:90px;
+  z-index:5;
+}
+#miniGlobeCanvas{width:90px;height:90px;}
+
 /* Scrollbar */
 ::-webkit-scrollbar{width:3px;}
 ::-webkit-scrollbar-track{background:transparent;}
@@ -527,8 +575,9 @@ body{
     <!-- Reactor + controls -->
     <div class="panel" id="reactorPanel" style="display:flex;align-items:center;justify-content:center;margin-top:30px;">
       <div style="display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap;">
-        <div class="reactor-rings" style="position:relative;width:280px;height:280px;display:flex;align-items:center;justify-content:center;">
-          <canvas id="sphereCanvas" style="position:absolute;inset:0;width:280px;height:280px;border-radius:50%;cursor:pointer;z-index:4;" onclick="toggleListening()"></canvas>
+        <div class="reactor-rings" style="position:relative;width:340px;height:340px;display:flex;align-items:center;justify-content:center;">
+          <canvas id="radarCanvas"></canvas>
+          <canvas id="sphereCanvas" style="position:absolute;inset:0;width:340px;height:340px;border-radius:50%;cursor:pointer;z-index:4;" onclick="toggleListening()"></canvas>
           <div style="position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;pointer-events:none;z-index:3;">
             <svg class="mic-icon" viewBox="0 0 24 24" fill="none" style="width:28px;height:28px;">
               <path d="M12 2C10.343 2 9 3.343 9 5V12C9 13.657 10.343 15 12 15C13.657 15 15 13.657 15 12V5C15 3.343 13.657 2 12 2Z" id="micPath" fill="#00b4ff"/>
@@ -538,7 +587,7 @@ body{
             </svg>
             <span class="mic-label" id="micLabel" style="font-family:'Share Tech Mono',monospace;font-size:9px;color:#2a7a9a;letter-spacing:2px;">ACTIVATE</span>
           </div>
-          <span id="micBtn" style="display:none;"></span>
+<span id="micBtn" style="display:none"></span><span id="micLabel" style="display:none"></span>
         </div>
         <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
           <div id="wakeIndicator">SAY "HEY JARVIS"</div>
@@ -548,6 +597,7 @@ body{
             <div class="wave-bar"></div><div class="wave-bar"></div>
             <div class="wave-bar"></div><div class="wave-bar"></div>
           </div>
+          <div id="voiceViz"></div>
           <div id="confidenceRow">
             <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:#1a5a72;letter-spacing:2px;">CONF</span>
             <div id="confidenceTrack"><div id="confidenceBar"></div></div>
@@ -558,18 +608,15 @@ body{
       </div>
     </div>
 
+    <div style="flex:1;min-height:20px;"></div>
     <!-- Transcript -->
-    <div style="flex:1;"></div>
     <div id="transcriptPanel"><span style="color:#1a4a62;font-style:italic;">Awaiting voice input...</span></div>
 
     <!-- Response -->
     <div id="responsePanel" style="flex:1;"><span style="color:#1a4a62;font-family:'Share Tech Mono',monospace;font-size:11px;font-style:italic;">Initialising systems...</span></div>
 
-    <!-- Text input -->
-    <div class="input-row">
-      <input class="text-input" type="text" id="textInput" placeholder='Type a command...'/>
-      <button class="send-btn" onclick="sendText()">SEND</button>
-    </div>
+    <!-- Text input hidden (replaced by cmdLine) -->
+    <input type="hidden" id="textInput"/>
 
   </div>
 
@@ -642,6 +689,11 @@ body{
 
 </div>
 
+<canvas id="dataLinesCanvas"></canvas>
+<div id="cmdLine">
+  <input type="text" id="cmdLineInput" placeholder="enter command..." autocomplete="off"/>
+</div>
+<div id="miniGlobe"><canvas id="miniGlobeCanvas" width="90" height="90"></canvas></div>
 <div class="notif" id="notif"></div>
 
 <script>
@@ -904,8 +956,8 @@ function speak(text){
   const clean=text.replace(/[*_#`]/g,'').split(/[.!?]/)[0].trim().substring(0,200);
   const utter=new SpeechSynthesisUtterance(clean);
   utter.voice=selectedVoice||null;utter.rate=1.05;utter.pitch=0.78;utter.volume=1;
-  utter.onstart=()=>{micBtn.className='mic-btn speaking';micLabel.textContent='SPEAKING';responseEl.classList.add('speaking-now');if(window._setSphereState)window._setSphereState('speaking');};
-  utter.onend=utter.onerror=()=>{micBtn.className='mic-btn';micLabel.textContent='ACTIVATE';responseEl.classList.remove('speaking-now');currentUtterance=null;if(window._setSphereState)window._setSphereState('idle');};
+  utter.onstart=()=>{micBtn.className='mic-btn speaking';micLabel.textContent='SPEAKING';responseEl.classList.add('speaking-now');if(window._setSphereState)window._setSphereState('speaking');if(window._startVoiceViz)window._startVoiceViz();};
+  utter.onend=utter.onerror=()=>{micBtn.className='mic-btn';micLabel.textContent='ACTIVATE';responseEl.classList.remove('speaking-now');currentUtterance=null;if(window._setSphereState)window._setSphereState('idle');if(window._stopVoiceViz)window._stopVoiceViz();};
   currentUtterance=utter;speechSynthesis.speak(utter);
 }
 function toggleSpeech(){
@@ -1244,10 +1296,10 @@ document.getElementById('lockInput').addEventListener('keypress',e=>{if(e.key===
 (function(){
   const canvas=document.getElementById('sphereCanvas');
   if(!canvas)return;
-  const SIZE=280;
+  const SIZE=340;
   canvas.width=SIZE; canvas.height=SIZE;
   const ctx=canvas.getContext('2d');
-  const NDOTS=500,R=120;
+  const NDOTS=500,R=148;
   const dots=[];
 
   for(let i=0;i<NDOTS;i++){
@@ -1315,17 +1367,223 @@ document.getElementById('lockInput').addEventListener('keypress',e=>{if(e.key===
     });
 
     // Outer glow ring
-    const glow=ctx.createRadialGradient(SIZE/2,SIZE/2,R+2,SIZE/2,SIZE/2,R+28);
+    const glow=ctx.createRadialGradient(SIZE/2,SIZE/2,R+2,SIZE/2,SIZE/2,R+34);
     const glowAlpha=state==='listening'?0.5:state==='speaking'?0.7:state==='thinking'?0.4:0.15;
     glow.addColorStop(0,col+Math.round(glowAlpha*255).toString(16).padStart(2,'0'));
     glow.addColorStop(1,'transparent');
-    ctx.beginPath();ctx.arc(SIZE/2,SIZE/2,R+28,0,Math.PI*2);
+    ctx.beginPath();ctx.arc(SIZE/2,SIZE/2,R+34,0,Math.PI*2);
     ctx.fillStyle=glow;ctx.fill();
 
     requestAnimationFrame(draw);
   }
   draw();
 })();
+
+
+// -- Radar sweep --
+(function(){
+  const canvas=document.getElementById('radarCanvas');
+  if(!canvas)return;
+  const SIZE=340;canvas.width=SIZE;canvas.height=SIZE;
+  const ctx=canvas.getContext('2d');
+  const R=148;let sweep=0;
+  function draw(){
+    ctx.clearRect(0,0,SIZE,SIZE);
+    const accent=getComputedStyle(document.documentElement).getPropertyValue('--a').trim()||'#00b4ff';
+    sweep+=0.015;
+    // Sweep gradient
+    const grad=ctx.createConicalGradient?ctx.createConicalGradient(SIZE/2,SIZE/2,sweep):null;
+    ctx.save();
+    ctx.translate(SIZE/2,SIZE/2);ctx.rotate(sweep);
+    const sweepGrad=ctx.createLinearGradient(0,-R,0,0);
+    sweepGrad.addColorStop(0,accent+'00');
+    sweepGrad.addColorStop(1,accent+'33');
+    ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,R,-Math.PI/2,-Math.PI/2+Math.PI/3);ctx.closePath();
+    ctx.fillStyle=sweepGrad;ctx.fill();
+    // Sweep line
+    ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,-R);
+    ctx.strokeStyle=accent+'88';ctx.lineWidth=1.5;ctx.stroke();
+    ctx.restore();
+    // Ring circles
+    [0.35,0.65,1].forEach(f=>{
+      ctx.beginPath();ctx.arc(SIZE/2,SIZE/2,R*f,0,Math.PI*2);
+      ctx.strokeStyle=accent+'18';ctx.lineWidth=0.5;ctx.stroke();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// -- Data lines --
+(function(){
+  const canvas=document.getElementById('dataLinesCanvas');
+  if(!canvas)return;
+  function resize(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;}
+  resize();window.addEventListener('resize',resize);
+  const ctx=canvas.getContext('2d');
+  let particles=[];
+  function getSphereCentre(){
+    const hud=document.getElementById('hud');
+    const rc=document.getElementById('reactorPanel');
+    if(!rc)return{x:window.innerWidth/2,y:window.innerHeight/2};
+    const rect=rc.getBoundingClientRect();
+    return{x:rect.left+rect.width/2,y:rect.top+rect.height/2};
+  }
+  function spawnParticle(){
+    const sc=getSphereCentre();
+    // Pick a random panel on left or right
+    const side=Math.random()>0.5?'left':'right';
+    const x=side==='left'?Math.random()*220:window.innerWidth-Math.random()*220;
+    const y=Math.random()*window.innerHeight*0.8+window.innerHeight*0.1;
+    particles.push({x,y,tx:sc.x,ty:sc.y,progress:0,speed:0.008+Math.random()*0.006});
+  }
+  setInterval(spawnParticle,600);
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const accent=getComputedStyle(document.documentElement).getPropertyValue('--a').trim()||'#00b4ff';
+    particles=particles.filter(p=>p.progress<1);
+    particles.forEach(p=>{
+      p.progress+=p.speed;
+      const cx=p.x+(p.tx-p.x)*p.progress;
+      const cy=p.y+(p.ty-p.y)*p.progress;
+      const alpha=Math.sin(p.progress*Math.PI)*0.6;
+      ctx.beginPath();ctx.arc(cx,cy,1.5,0,Math.PI*2);
+      ctx.fillStyle=accent+Math.round(alpha*255).toString(16).padStart(2,'0');
+      ctx.fill();
+      // Trail
+      if(p.progress>0.02){
+        const px=p.x+(p.tx-p.x)*(p.progress-0.02);
+        const py=p.y+(p.ty-p.y)*(p.progress-0.02);
+        ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(cx,cy);
+        ctx.strokeStyle=accent+Math.round(alpha*0.4*255).toString(16).padStart(2,'0');
+        ctx.lineWidth=0.8;ctx.stroke();
+      }
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// -- Mini globe --
+(function(){
+  const canvas=document.getElementById('miniGlobeCanvas');
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const S=90,R=38,cx=45,cy=45;
+  const NDOTS=80;const dots=[];
+  for(let i=0;i<NDOTS;i++){
+    const phi=Math.acos(1-2*(i+0.5)/NDOTS);
+    const theta=Math.PI*(1+Math.sqrt(5))*i;
+    dots.push({ox:Math.sin(phi)*Math.cos(theta),oy:Math.sin(phi)*Math.sin(theta),oz:Math.cos(phi)});
+  }
+  // Lat/lon lines
+  const lines=[];
+  for(let lat=-60;lat<=60;lat+=30){
+    const pts=[];
+    for(let lon=0;lon<=360;lon+=10){
+      const phi=Math.PI/2-lat*Math.PI/180;
+      const theta=lon*Math.PI/180;
+      pts.push({ox:Math.sin(phi)*Math.cos(theta),oy:Math.cos(phi),oz:Math.sin(phi)*Math.sin(theta)});
+    }
+    lines.push(pts);
+  }
+  for(let lon=0;lon<360;lon+=60){
+    const pts=[];
+    for(let lat=-90;lat<=90;lat+=10){
+      const phi=Math.PI/2-lat*Math.PI/180;
+      const theta=lon*Math.PI/180;
+      pts.push({ox:Math.sin(phi)*Math.cos(theta),oy:Math.cos(phi),oz:Math.sin(phi)*Math.sin(theta)});
+    }
+    lines.push(pts);
+  }
+  let angle=0;
+  function draw(){
+    ctx.clearRect(0,0,S,S);
+    angle+=0.003;
+    const accent=getComputedStyle(document.documentElement).getPropertyValue('--a').trim()||'#00b4ff';
+    const cosA=Math.cos(angle),sinA=Math.sin(angle);
+    function proj(d){
+      const x=d.ox*cosA-d.oz*sinA;
+      const z=d.ox*sinA+d.oz*cosA;
+      return{sx:cx+x*R,sy:cy+d.oy*R,z,vis:z>-0.3};
+    }
+    // Draw grid lines
+    lines.forEach(pts=>{
+      const projected=pts.map(proj);
+      ctx.beginPath();let first=true;
+      projected.forEach(p=>{
+        if(!p.vis){first=true;return;}
+        if(first){ctx.moveTo(p.sx,p.sy);first=false;}
+        else ctx.lineTo(p.sx,p.sy);
+      });
+      ctx.strokeStyle=accent+'22';ctx.lineWidth=0.5;ctx.stroke();
+    });
+    // Perth dot (approx -31.95, 115.86)
+    const perthPhi=Math.PI/2+31.95*Math.PI/180;
+    const perthTheta=115.86*Math.PI/180;
+    const pd={ox:Math.sin(perthPhi)*Math.cos(perthTheta),oy:Math.cos(perthPhi),oz:Math.sin(perthPhi)*Math.sin(perthTheta)};
+    const pp=proj(pd);
+    if(pp.vis){
+      ctx.beginPath();ctx.arc(pp.sx,pp.sy,3,0,Math.PI*2);
+      ctx.fillStyle=accent;ctx.fill();
+      ctx.beginPath();ctx.arc(pp.sx,pp.sy,5+Math.sin(Date.now()*0.003)*2,0,Math.PI*2);
+      ctx.strokeStyle=accent+'66';ctx.lineWidth=1;ctx.stroke();
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// -- Voice visualiser --
+(function(){
+  const viz=document.getElementById('voiceViz');
+  if(!viz)return;
+  for(let i=0;i<20;i++){const b=document.createElement('div');b.className='vbar';viz.appendChild(b);}
+  const bars=[...viz.querySelectorAll('.vbar')];
+  let animId;
+  window._startVoiceViz=function(){
+    viz.classList.add('active');
+    function animate(){
+      bars.forEach(b=>{
+        const h=4+Math.random()*28;
+        b.style.height=h+'px';
+        b.style.opacity=0.4+Math.random()*0.6;
+      });
+      animId=requestAnimationFrame(animate);
+    }
+    animate();
+  };
+  window._stopVoiceViz=function(){
+    viz.classList.remove('active');
+    cancelAnimationFrame(animId);
+    bars.forEach(b=>{b.style.height='4px';b.style.opacity='0.4';});
+  };
+})();
+
+// -- Command line --
+document.getElementById('cmdLineInput').addEventListener('keypress',e=>{
+  if(e.key==='Enter'){
+    const val=e.target.value.trim();
+    if(!val)return;
+    e.target.value='';
+    processQuery(val);
+  }
+});
+
+// -- Typewriter effect --
+function typewriterDisplay(text){
+  responseEl.innerHTML='';
+  const p=document.createElement('p');
+  p.style.cssText='margin:0;white-space:pre-wrap;font-family:Rajdhani,sans-serif;';
+  const cursor=document.createElement('span');cursor.className='typewriter-cursor';
+  responseEl.appendChild(p);responseEl.appendChild(cursor);
+  let i=0;
+  function type(){
+    if(i<text.length){p.textContent+=text[i];i++;setTimeout(type,18);}
+    else{cursor.remove();}
+  }
+  type();
+}
 
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 
