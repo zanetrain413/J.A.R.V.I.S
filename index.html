@@ -1099,86 +1099,15 @@ function handleLocalCommand(q){
     return 'Protocol initiated. '+line;
   }
 
-  // Drop the needle (old engage)
-  if(/^drop the needle[.!?]?$/.test(lower.trim())){
+  // Engage
+  if(/^engage[.!?]?$/.test(lower.trim())||lower.trim()==='engage'){
     window.open('https://makerworld.com','_blank');
     setTimeout(()=>window.open('https://world-monitor.com','_blank'),200);
     setTimeout(()=>window.open('https://www.printables.com','_blank'),400);
     setTimeout(()=>window.open('https://www.tinkercad.com','_blank'),600);
     setTimeout(()=>window.open('https://www.youtube.com/watch?v=FVdO7g0_lXc&list=RDFVdO7g0_lXc&start_radio=1&autoplay=1','_blank'),800);
     playBeep(300,0.06);setTimeout(()=>playBeep(500,0.08),100);setTimeout(()=>playBeep(800,0.08),200);setTimeout(()=>playBeep(1100,0.2),320);
-    return 'Dropping the needle, Mr. Ondrak.';
-  }
-
-  // Engage — Lock & Load protocol
-  if(/^engage[.!?]?$/.test(lower.trim())||lower.trim()==='engage'){
-    // Open school tools
-    window.open('https://stile.com','_blank');
-    setTimeout(()=>window.open('https://compass.education','_blank'),600);
-    // Sound: rising lock-on beeps
-    playBeep(400,0.07);setTimeout(()=>playBeep(600,0.08),120);setTimeout(()=>playBeep(900,0.1),260);setTimeout(()=>playBeep(1200,0.18),420);
-    // Mission briefing overlay
-    setTimeout(()=>{
-      const existing=document.getElementById('lockload-overlay');
-      if(existing)existing.remove();
-      const overlay=document.createElement('div');
-      overlay.id='lockload-overlay';
-      const now=new Date();
-      const battPct=document.getElementById('batteryPct')?document.getElementById('batteryPct').textContent:'--';
-      const battChg=document.getElementById('batteryIcon')?document.getElementById('batteryIcon').textContent==='⚡':false;
-      const weatherTemp=document.getElementById('weatherTemp')?document.getElementById('weatherTemp').textContent:'--';
-      const weatherDesc=document.getElementById('weatherDesc')?document.getElementById('weatherDesc').textContent:'--';
-      const todoCount=todos.filter(t=>!t.done).length;
-      const memCount=memories.length;
-      overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.88);z-index:9999;display:flex;align-items:center;justify-content:center;animation:llFadeIn 0.4s ease;';
-      overlay.innerHTML=`
-        <style>
-          @keyframes llFadeIn{from{opacity:0}to{opacity:1}}
-          @keyframes llFadeOut{from{opacity:1}to{opacity:0}}
-          @keyframes llScanIn{from{transform:translateY(-24px);opacity:0}to{transform:translateY(0);opacity:1}}
-          @keyframes llBar{from{width:0}to{width:100%}}
-          .ll-inner{border:1px solid rgba(0,180,255,0.5);padding:44px 60px;min-width:460px;font-family:'Share Tech Mono',monospace;animation:llScanIn 0.5s ease;position:relative;}
-          .ll-inner::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#00b4ff,transparent);animation:llBar 0.8s ease forwards;}
-          .ll-tag{font-size:10px;color:rgba(0,180,255,0.5);letter-spacing:0.22em;margin-bottom:18px;}
-          .ll-title{font-family:'Rajdhani',sans-serif;font-size:30px;font-weight:700;color:#00b4ff;letter-spacing:0.3em;margin-bottom:30px;text-shadow:0 0 20px rgba(0,180,255,0.6);}
-          .ll-divider{border:none;border-top:1px solid rgba(0,180,255,0.15);margin:16px 0;}
-          .ll-row{font-size:12px;color:#4ab8d8;margin:10px 0;letter-spacing:0.08em;display:flex;gap:12px;align-items:center;}
-          .ll-row .ll-label{color:rgba(0,180,255,0.5);min-width:140px;}
-          .ll-green{color:#00ff88;}
-          .ll-amber{color:#ff9f00;}
-          .ll-blue{color:#00b4ff;}
-          .ll-sub{font-size:9px;color:rgba(255,255,255,0.2);margin-top:28px;letter-spacing:0.15em;text-align:center;}
-        </style>
-        <div class="ll-inner">
-          <div class="ll-tag">// LOCK &amp; LOAD PROTOCOL — ENGAGED</div>
-          <div class="ll-title">MISSION BRIEFING</div>
-          <div class="ll-row"><span class="ll-label">JARVIS STATUS</span><span class="ll-green">ALL SYSTEMS NOMINAL</span></div>
-          <div class="ll-row"><span class="ll-label">STILE</span><span class="ll-green">ONLINE ↗</span></div>
-          <div class="ll-row"><span class="ll-label">COMPASS</span><span class="ll-green">ONLINE ↗</span></div>
-          <hr class="ll-divider">
-          <div class="ll-row"><span class="ll-label">BATTERY</span><span class="${battChg?'ll-green':'ll-amber'}">${battPct}${battChg?' — CHARGING':''}</span></div>
-          <div class="ll-row"><span class="ll-label">PERTH WEATHER</span><span class="ll-blue">${weatherTemp} — ${weatherDesc}</span></div>
-          <div class="ll-row"><span class="ll-label">ACTIVE MISSIONS</span><span class="${todoCount>0?'ll-amber':'ll-green'}">${todoCount} PENDING</span></div>
-          <div class="ll-row"><span class="ll-label">MEMORY BANKS</span><span class="ll-blue">${memCount} ENTR${memCount===1?'Y':'IES'}</span></div>
-          <hr class="ll-divider">
-          <div class="ll-row"><span class="ll-label">TIMESTAMP</span><span class="ll-blue">${now.toLocaleTimeString('en-AU',{hour12:false})} — ${now.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}).toUpperCase()}</span></div>
-          <div class="ll-row"><span class="ll-label">LOCATION LOCK</span><span class="ll-green">PERTH, WESTERN AUSTRALIA</span></div>
-          <div class="ll-sub">CLEARANCE: ALPHA · TAP TO DISMISS</div>
-        </div>`;
-      overlay.addEventListener('click',()=>{
-        overlay.style.animation='llFadeOut 0.35s ease forwards';
-        setTimeout(()=>overlay.remove(),350);
-      });
-      document.body.appendChild(overlay);
-      // Auto-dismiss after 6 seconds
-      setTimeout(()=>{
-        if(document.getElementById('lockload-overlay')){
-          overlay.style.animation='llFadeOut 0.35s ease forwards';
-          setTimeout(()=>overlay.remove(),350);
-        }
-      },6000);
-    },500);
-    return 'Lock and load, Mr. Ondrak. Stile and Compass are coming online. All systems nominal.';
+    return 'Engaging, Mr. Ondrak.';
   }
 
   // Rick
@@ -1553,7 +1482,7 @@ document.getElementById('lockInput').addEventListener('keypress',e=>{if(e.key===
   function proj(p,cosA,sinA){
     const x=p.ox*cosA-p.oz*sinA;
     const z=p.ox*sinA+p.oz*cosA;
-    return{sx:cx+x*R,sy:cy-p.oy*R,z,vis:z>0};
+    return{sx:cx+x*R,sy:cy+p.oy*R,z,vis:z>0};
   }
 
   function drawGlobe(){
@@ -1699,6 +1628,56 @@ function typewriterDisplay(text){
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 
 window.addEventListener('load',()=>setTimeout(runBoot,200));
+
+// -- PIR Motion Trigger (ntfy.sh) --
+(function(){
+  const NTFY_TOPIC = 'jarvis-pir-ondrak-room';
+  const COOLDOWN_MS = 30000; // 30 seconds between triggers
+  let lastTrigger = 0;
+  let ntfyActive = false;
+
+  function startNtfyListener(){
+    if(ntfyActive) return;
+    ntfyActive = true;
+    const es = new EventSource('https://ntfy.sh/' + NTFY_TOPIC + '/sse');
+    es.onmessage = function(e){
+      try{
+        const data = JSON.parse(e.data);
+        if(data.event === 'message' && data.message === 'motion'){
+          const now = Date.now();
+          if(now - lastTrigger < COOLDOWN_MS) return;
+          lastTrigger = now;
+          onMotionDetected();
+        }
+      }catch(err){}
+    };
+    es.onerror = function(){
+      ntfyActive = false;
+      setTimeout(startNtfyListener, 5000); // reconnect after 5s
+    };
+  }
+
+  function onMotionDetected(){
+    // Only trigger if HUD is visible (JARVIS is unlocked)
+    const hud = document.getElementById('hud');
+    if(!hud || !hud.classList.contains('visible')) return;
+
+    playActivate();
+    showNotif('Motion detected — welcome back, Mr. Ondrak.', 3000);
+
+    const h = new Date().getHours();
+    const greeting = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+    const prompt = greeting + ', Mr. Ondrak. You have just entered the room. Greet me with your usual style, then ask what I would like to do today.';
+
+    setTimeout(()=> processQuery(prompt), 1200);
+  }
+
+  // Start listening once page is loaded
+  window.addEventListener('load', ()=> setTimeout(startNtfyListener, 3000));
+
+  // Expose for manual testing in console
+  window._testMotion = onMotionDetected;
+})();
 </script>
 </body>
 </html>
