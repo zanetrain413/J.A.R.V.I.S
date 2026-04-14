@@ -1628,56 +1628,6 @@ function typewriterDisplay(text){
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 
 window.addEventListener('load',()=>setTimeout(runBoot,200));
-
-// -- PIR Motion Trigger (ntfy.sh) --
-(function(){
-  const NTFY_TOPIC = 'jarvis-pir-ondrak-room';
-  const COOLDOWN_MS = 30000; // 30 seconds between triggers
-  let lastTrigger = 0;
-  let ntfyActive = false;
-
-  function startNtfyListener(){
-    if(ntfyActive) return;
-    ntfyActive = true;
-    const es = new EventSource('https://ntfy.sh/' + NTFY_TOPIC + '/sse');
-    es.onmessage = function(e){
-      try{
-        const data = JSON.parse(e.data);
-        if(data.event === 'message' && data.message === 'motion'){
-          const now = Date.now();
-          if(now - lastTrigger < COOLDOWN_MS) return;
-          lastTrigger = now;
-          onMotionDetected();
-        }
-      }catch(err){}
-    };
-    es.onerror = function(){
-      ntfyActive = false;
-      setTimeout(startNtfyListener, 5000); // reconnect after 5s
-    };
-  }
-
-  function onMotionDetected(){
-    // Only trigger if HUD is visible (JARVIS is unlocked)
-    const hud = document.getElementById('hud');
-    if(!hud || !hud.classList.contains('visible')) return;
-
-    playActivate();
-    showNotif('Motion detected — welcome back, Mr. Ondrak.', 3000);
-
-    const h = new Date().getHours();
-    const greeting = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
-    const prompt = greeting + ', Mr. Ondrak. You have just entered the room. Greet me with your usual style, then ask what I would like to do today.';
-
-    setTimeout(()=> processQuery(prompt), 1200);
-  }
-
-  // Start listening once page is loaded
-  window.addEventListener('load', ()=> setTimeout(startNtfyListener, 3000));
-
-  // Expose for manual testing in console
-  window._testMotion = onMotionDetected;
-})();
 </script>
 </body>
 </html>
