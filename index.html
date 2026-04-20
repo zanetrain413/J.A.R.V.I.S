@@ -1,0 +1,1588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>J.A.R.V.I.S.</title>
+<meta name="theme-color" content="#000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="JARVIS">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+
+/* ── Themes ── */
+:root{
+  --a:#00b4ff;--a2:#00ff9f;--bg:#000;--bg2:#020d18;--text:#7ecfed;--bdr:#0a3a52;
+  --panel:rgba(0,20,40,0.75);
+}
+body.t-blue   {--a:#00b4ff;--a2:#00ff9f;--bg:#000510;--bg2:#020d18;--text:#7ecfed;--bdr:#0a3a52;--panel:rgba(0,20,40,0.75);}
+body.t-ironman{--a:#ffd700;--a2:#ff3300;--bg:#0a0500;--bg2:#120800;--text:#ffcc88;--bdr:#6a3000;--panel:rgba(30,14,0,0.8);}
+body.t-black  {--a:#ff4444;--a2:#ff9f00;--bg:#000;--bg2:#0a0000;--text:#ffaaaa;--bdr:#3a0a0a;--panel:rgba(20,0,0,0.8);}
+
+body{
+  background:var(--bg); color:var(--text);
+  font-family:'Rajdhani',sans-serif;
+  min-height:100vh; min-height:100dvh;
+  overflow:hidden;
+}
+
+/* ── Rotating sphere canvas ── */
+
+
+.scanline{
+  position:fixed;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,180,255,0.01) 2px,rgba(0,180,255,0.01) 4px);
+  pointer-events:none;z-index:1;
+}
+
+/* ── Boot Screen ── */
+#bootScreen{
+  position:fixed;inset:0;background:#000;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:999;font-family:'Share Tech Mono',monospace;
+}
+.boot-logo{
+  font-family:'Rajdhani',sans-serif;font-size:52px;font-weight:700;
+  letter-spacing:14px;color:#00b4ff;
+  text-shadow:0 0 40px rgba(0,180,255,0.9),0 0 80px rgba(0,180,255,0.4);
+  margin-bottom:48px;opacity:0;
+  animation:bootLogo 0.8s ease forwards 0.3s;
+}
+@keyframes bootLogo{to{opacity:1}}
+#bootLines{font-size:11px;color:#2a7a9a;line-height:2.2;text-align:left;width:360px;}
+.boot-line{opacity:0;animation:fadeIn 0.15s forwards;}
+@keyframes fadeIn{to{opacity:1}}
+#bootProgress{width:360px;height:2px;background:#0a2a3f;margin-top:24px;border-radius:1px;overflow:hidden;}
+#bootBar{height:100%;background:#00b4ff;width:0%;transition:width 0.15s;}
+
+/* ── Lock Screen ── */
+#lockScreen{
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:500;padding:20px;
+}
+.lock-ring{
+  width:90px;height:90px;border-radius:50%;
+  border:2px solid var(--bdr);
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:28px;
+  box-shadow:0 0 30px rgba(0,180,255,0.2);
+  animation:ring-pulse 3s ease-in-out infinite;
+}
+.lock-logo{font-family:'Rajdhani',sans-serif;font-size:30px;font-weight:700;letter-spacing:8px;color:var(--a);text-shadow:0 0 20px rgba(0,180,255,0.6);margin-bottom:8px;}
+.lock-sub{font-family:'Share Tech Mono',monospace;font-size:10px;color:#2a7a9a;letter-spacing:3px;margin-bottom:36px;}
+.lock-prompt{font-family:'Share Tech Mono',monospace;font-size:12px;color:#4ab8d8;margin-bottom:16px;text-align:center;line-height:1.8;}
+#lockStatus{font-family:'Share Tech Mono',monospace;font-size:11px;color:#1a5a72;margin-bottom:16px;min-height:18px;text-align:center;}
+#lockStatus.denied{color:#ff4444;animation:timerDone 0.5s ease infinite alternate;}
+#lockStatus.granted{color:var(--a2);}
+#lockInput{
+  font-family:'Share Tech Mono',monospace;font-size:13px;
+  background:transparent;border:none;
+  color:var(--text);padding:10px 14px;border-radius:2px;outline:none;
+  width:100%;max-width:340px;margin-bottom:10px;text-align:center;
+}
+#lockInput:focus{border-color:rgba(0,180,255,0.3);}
+#lockMicBtn{
+  width:52px;height:52px;border-radius:50%;
+  background:radial-gradient(circle at 40% 35%,#0a2a3f,var(--bg));
+  border:2px solid #0a4060;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 8px;transition:all 0.3s;
+  box-shadow:0 0 20px rgba(0,100,180,0.3);
+}
+#lockMicStatus{font-family:'Share Tech Mono',monospace;font-size:10px;color:#1a5a72;letter-spacing:2px;margin-bottom:12px;min-height:16px;text-align:center;}
+#lockSubmit{
+  font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;
+  letter-spacing:2px;padding:10px 30px;
+  background:transparent;border:none;
+  color:var(--a);cursor:pointer;border-radius:2px;transition:all 0.2s;
+  width:100%;max-width:340px;
+}
+#lockSubmit:hover{background:rgba(0,180,255,0.2);}
+
+/* ── Main HUD Layout ── */
+#hud{
+  position:fixed;inset:0;z-index:2;
+  display:grid;
+  grid-template-columns:220px 1fr 220px;
+  grid-template-rows:auto 1fr auto;
+  gap:8px;padding:8px;
+  opacity:0;transition:opacity 0.8s;
+  height:100vh;
+  box-sizing:border-box;
+}
+#hud.visible{opacity:1;}
+
+/* ── Panel base ── */
+.panel{
+  background:transparent;
+  border:none;
+  border-radius:4px;
+  padding:10px 12px;
+  position:relative;
+  
+}
+.panel-title{
+  font-family:'Share Tech Mono',monospace;font-size:9px;
+  color:rgba(0,180,255,0.5);letter-spacing:3px;
+  margin-bottom:8px;text-transform:uppercase;
+}
+
+/* ── Top Bar ── */
+#topBar{
+  grid-column:1/-1;
+  display:flex;align-items:center;justify-content:space-between;
+  background:transparent;border:none;border-radius:4px;
+  padding:8px 16px;
+  
+}
+.top-logo{
+  font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;
+  letter-spacing:8px;color:var(--a);
+  text-shadow:0 0 15px rgba(0,180,255,0.5);
+}
+.top-logo span{color:#fff;}
+.top-center{display:flex;align-items:center;gap:20px;}
+#clock{font-family:'Share Tech Mono',monospace;font-size:18px;color:var(--a);letter-spacing:4px;}
+#date{font-family:'Share Tech Mono',monospace;font-size:10px;color:#2a7a9a;letter-spacing:2px;}
+.top-right{font-family:'Share Tech Mono',monospace;font-size:10px;color:#2a7a9a;text-align:right;line-height:1.8;}
+.top-status{color:var(--a2);}
+#hudName{color:#ff9f00;cursor:pointer;font-weight:600;}
+
+/* ── Left Column ── */
+#leftCol{grid-column:1;grid-row:2;display:flex;flex-direction:column;gap:8px;overflow-y:auto;scrollbar-width:none;min-width:0;}
+#leftCol::-webkit-scrollbar{display:none;}
+
+/* Weather panel */
+#weatherPanel{}
+.weather-main{display:flex;align-items:center;gap:12px;margin-bottom:8px;}
+.weather-icon{font-size:32px;}
+.weather-temp{font-size:28px;font-weight:600;color:var(--a);}
+.weather-desc{font-family:'Share Tech Mono',monospace;font-size:10px;color:#2a7a9a;letter-spacing:1px;}
+.weather-row{display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:10px;color:#2a7a9a;margin-top:4px;}
+.weather-val{color:var(--text);}
+#weatherUpdate{font-family:'Share Tech Mono',monospace;font-size:9px;color:#1a4a62;margin-top:6px;cursor:pointer;}
+#weatherUpdate:hover{color:var(--a);}
+
+/* Battery panel */
+.battery-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.battery-pct{font-size:20px;font-weight:600;color:var(--a);}
+.battery-track{height:8px;background:rgba(0,180,255,0.1);border-radius:4px;overflow:hidden;margin-bottom:4px;}
+#batteryBar{height:100%;width:0%;background:var(--a2);transition:width 0.5s;border-radius:4px;}
+.battery-status{font-family:'Share Tech Mono',monospace;font-size:9px;color:#2a7a9a;letter-spacing:1px;}
+
+/* Memory panel */
+.memory-list{display:flex;flex-direction:column;gap:3px;max-height:100px;overflow-y:auto;scrollbar-width:none;}
+.memory-item{font-family:'Share Tech Mono',monospace;font-size:10px;color:#1a6a5a;padding:3px 6px;border-left:1px solid #0a3a2a;display:flex;justify-content:space-between;}
+.memory-item span{color:#2a9a7a;flex:1;}
+.memory-del{cursor:pointer;color:#3a2a2a;font-size:11px;padding:0 3px;}
+.memory-del:hover{color:#ff4444;}
+
+/* Countdown panel */
+.countdown-item{font-family:'Share Tech Mono',monospace;font-size:10px;color:#4ab8d8;padding:3px 6px;border-left:1px solid #0a3a52;display:flex;justify-content:space-between;align-items:center;gap:6px;}
+.cd-days{color:var(--a);font-size:12px;font-weight:600;min-width:36px;text-align:right;}
+.countdown-del{cursor:pointer;color:#3a2a2a;font-size:11px;}
+.countdown-del:hover{color:#ff4444;}
+
+/* ── Centre Column ── */
+#centreCol{grid-column:2;grid-row:2;display:flex;flex-direction:column;gap:8px;min-width:0;}
+
+/* Arc reactor */
+#reactorPanel{
+  display:flex;flex-direction:column;align-items:center;
+  padding:16px;flex-shrink:0;
+}
+.reactor-rings{position:relative;display:flex;align-items:center;justify-content:center;width:200px;height:200px;}
+.r-ring{position:absolute;border-radius:50%;border:1px solid rgba(0,180,255,0.15);animation:ring-pulse 3s ease-in-out infinite;}
+.r-ring:nth-child(1){width:200px;height:200px;}
+.r-ring:nth-child(2){width:160px;height:160px;animation-delay:0.5s;border-color:rgba(0,180,255,0.1);}
+.r-ring:nth-child(3){width:120px;height:120px;animation-delay:1s;border-color:rgba(0,180,255,0.08);}
+@keyframes ring-pulse{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(1.04);opacity:1}}
+.mic-btn{
+  width:100px;height:100px;border-radius:50%;
+  background:radial-gradient(circle at 40% 35%,#0a2a3f,var(--bg));
+  border:2px solid #0a4060;cursor:pointer;z-index:2;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  transition:border-color 0.3s,box-shadow 0.3s;
+  box-shadow:0 0 30px rgba(0,100,180,0.3),inset 0 0 20px rgba(0,0,0,0.5);
+  -webkit-tap-highlight-color:transparent;
+}
+.mic-btn:hover{border-color:var(--a);box-shadow:0 0 40px rgba(0,180,255,0.4),inset 0 0 20px rgba(0,0,0,0.5);}
+.mic-btn.listening{border-color:var(--a2);box-shadow:0 0 50px rgba(0,255,159,0.5);animation:mic-glow 1s ease-in-out infinite alternate;}
+.mic-btn.thinking{border-color:#ff9f00;box-shadow:0 0 50px rgba(255,159,0,0.4);}
+.mic-btn.speaking{border-color:var(--a);box-shadow:0 0 70px rgba(0,180,255,0.8);animation:mic-speak 0.5s ease-in-out infinite alternate;}
+@keyframes mic-glow{from{box-shadow:0 0 40px rgba(0,255,159,0.4)}to{box-shadow:0 0 70px rgba(0,255,159,0.7)}}
+@keyframes mic-speak{from{box-shadow:0 0 40px rgba(0,180,255,0.5)}to{box-shadow:0 0 90px rgba(0,180,255,1)}}
+.mic-icon{width:28px;height:28px;}
+.mic-icon path{fill:var(--a);transition:fill 0.3s;}
+.mic-btn.listening .mic-icon path{fill:var(--a2);}
+.mic-btn.thinking .mic-icon path{fill:#ff9f00;}
+.mic-label{font-family:'Share Tech Mono',monospace;font-size:9px;color:#2a7a9a;letter-spacing:2px;}
+.mic-btn.listening .mic-label{color:var(--a2);}
+.mic-btn.thinking .mic-label{color:#ff9f00;}
+.mic-btn.speaking .mic-label{color:var(--a);}
+
+#wakeIndicator{font-family:'Share Tech Mono',monospace;font-size:9px;color:#1a4a62;letter-spacing:2px;margin-top:6px;}
+#wakeIndicator.active{color:var(--a2);}
+
+/* Waveform */
+.waveform{display:flex;align-items:center;justify-content:center;gap:3px;height:20px;margin-top:6px;opacity:0;transition:opacity 0.3s;}
+.waveform.active{opacity:1;}
+.wave-bar{width:2px;border-radius:2px;background:var(--a2);animation:wave 1.2s ease-in-out infinite;}
+.wave-bar:nth-child(1){animation-delay:0s}.wave-bar:nth-child(2){animation-delay:0.1s}
+.wave-bar:nth-child(3){animation-delay:0.2s}.wave-bar:nth-child(4){animation-delay:0.3s}
+.wave-bar:nth-child(5){animation-delay:0.4s}.wave-bar:nth-child(6){animation-delay:0.3s}
+.wave-bar:nth-child(7){animation-delay:0.2s}.wave-bar:nth-child(8){animation-delay:0.1s}
+@keyframes wave{0%,100%{height:3px}50%{height:18px}}
+
+/* Confidence */
+#confidenceRow{display:none;align-items:center;gap:8px;margin-top:4px;font-family:'Share Tech Mono',monospace;font-size:9px;}
+#confidenceTrack{flex:1;height:2px;background:rgba(0,180,255,0.1);border-radius:1px;overflow:hidden;}
+#confidenceBar{height:100%;width:0%;background:var(--a2);transition:width 0.3s;}
+#confidenceLabel{color:#2a7a9a;min-width:28px;text-align:right;}
+
+/* Transcript & Response */
+#transcriptPanel{
+  background:transparent;border:none;border-radius:4px;
+  padding:6px 14px;min-height:30px;
+  font-family:'Share Tech Mono',monospace;font-size:11px;color:#4ab8d8;line-height:1.4;position:relative;
+}
+#transcriptPanel::after{content:'YOU';position:absolute;top:6px;right:10px;font-size:8px;color:#1a5a72;letter-spacing:2px;}
+
+#responsePanel{
+  flex:0 0 120px;max-height:120px;background:transparent;border:none;border-radius:4px;
+  padding:10px 14px;overflow-y:auto;
+  font-size:13px;line-height:1.6;color:#a0dff5;position:relative;
+  scrollbar-width:thin;scrollbar-color:var(--bdr) transparent;
+}
+#responsePanel::after{content:'J.A.R.V.I.S.';position:absolute;top:8px;right:10px;font-size:8px;font-family:'Share Tech Mono',monospace;color:rgba(0,180,255,0.4);letter-spacing:2px;}
+#responsePanel .thinking-dots::after{content:'.';animation:dots 1.5s infinite;}
+@keyframes dots{0%{content:'.'}33%{content:'..'}66%{content:'...'}}
+@keyframes typeIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+#responsePanel p{animation:typeIn 0.3s ease forwards;}
+@keyframes text-glow{0%,100%{text-shadow:none}50%{text-shadow:0 0 10px rgba(0,180,255,0.4)}}
+#responsePanel.speaking-now{animation:text-glow 1.5s infinite;}
+
+/* Timer */
+#timerDisplay{
+  display:none;text-align:center;padding:8px;
+  font-family:'Share Tech Mono',monospace;font-size:26px;
+  color:var(--a);letter-spacing:4px;
+}
+#timerDisplay.active{display:block;}
+#timerDisplay.done{color:#ff4444;animation:timerDone 0.5s ease infinite alternate;}
+@keyframes timerDone{from{opacity:1}to{opacity:0.2}}
+
+/* Text input */
+.input-row{display:flex;gap:6px;flex-shrink:0;}
+.text-input{
+  flex:1;font-family:'Share Tech Mono',monospace;font-size:12px;
+  background:transparent;border:none;
+  color:var(--text);padding:8px 12px;border-radius:2px;outline:none;
+}
+.text-input:focus{border-color:rgba(0,180,255,0.3);}
+.text-input::placeholder{color:#1a4a62;}
+.send-btn{
+  font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12px;
+  letter-spacing:1px;padding:8px 16px;
+  background:transparent;border:none;
+  color:var(--a);cursor:pointer;border-radius:2px;transition:all 0.2s;
+}
+.send-btn:hover{background:rgba(0,180,255,0.2);}
+
+/* ── Right Column ── */
+#rightCol{grid-column:3;grid-row:2;display:flex;flex-direction:column;gap:8px;overflow-y:auto;scrollbar-width:none;min-width:0;}
+#rightCol::-webkit-scrollbar{display:none;}
+
+/* Todo */
+.todo-item{font-family:'Share Tech Mono',monospace;font-size:10px;color:#1a6a5a;padding:3px 6px;border-left:1px solid #0a3a2a;display:flex;align-items:center;gap:4px;}
+.todo-item.done{color:#1a4a3a;text-decoration:line-through;opacity:0.5;}
+.todo-item span{flex:1;cursor:pointer;}
+.todo-check{cursor:pointer;font-size:11px;}
+.todo-del{cursor:pointer;color:#3a2a2a;font-size:11px;}
+.todo-del:hover{color:#ff4444;}
+
+/* API Key */
+.apikey-row{
+  display:flex;gap:6px;align-items:center;flex-wrap:wrap;
+  background:transparent;border:none;
+  border-radius:4px;padding:8px 10px;
+}
+.apikey-row label{font-family:'Share Tech Mono',monospace;font-size:9px;color:#ff9f00;letter-spacing:2px;white-space:nowrap;}
+.apikey-input{
+  flex:1;min-width:100px;font-family:'Share Tech Mono',monospace;font-size:11px;
+  background:transparent;border:none;border-bottom:1px solid #3a3010;
+  color:#ffcc80;outline:none;padding:2px 4px;
+}
+.apikey-input::placeholder{color:#5a4010;}
+.save-key-btn{
+  font-family:'Share Tech Mono',monospace;font-size:9px;
+  padding:3px 8px;background:rgba(255,159,0,0.1);
+  border:1px solid rgba(255,159,0,0.3);color:#ff9f00;
+  cursor:pointer;border-radius:2px;
+}
+
+/* Controls */
+.ctrl-row{display:flex;gap:6px;flex-wrap:wrap;}
+.ctrl-btn{
+  font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;
+  letter-spacing:1px;text-transform:uppercase;padding:5px 10px;border-radius:2px;
+  border:1px solid var(--bdr);background:transparent;
+  color:#2a8aaa;cursor:pointer;transition:all 0.2s;
+  -webkit-tap-highlight-color:transparent;
+}
+.ctrl-btn:hover{border-color:var(--a);color:var(--a);}
+.ctrl-btn.active{border-color:var(--a2);color:var(--a2);background:transparent;}
+.voice-select{
+  font-family:'Share Tech Mono',monospace;font-size:10px;
+  background:transparent;border:1px solid var(--bdr);
+  color:#2a7a9a;padding:4px 8px;border-radius:2px;cursor:pointer;width:100%;
+}
+.voice-select option{background:#020d18;}
+
+/* Theme dots */
+.theme-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.theme-label{font-family:'Share Tech Mono',monospace;font-size:9px;color:#2a7a9a;letter-spacing:2px;}
+.theme-dot{width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all 0.2s;flex-shrink:0;}
+.theme-dot:hover,.theme-dot.active{border-color:#fff;transform:scale(1.25);}
+.td-blue{background:#00b4ff}.td-ironman{background:linear-gradient(135deg,#ffd700,#ff3300)}.td-black{background:#ff4444;}
+.td-red{background:#ff4444}.td-gold{background:#ffd700}.td-green{background:#00ff9f}
+.td-purple{background:#b44dff}.td-cyberpink{background:#ff2d9f}.td-military{background:#7fff00}.td-teal{background:#00e5cc}
+
+/* History */
+.history-item{
+  font-family:'Share Tech Mono',monospace;font-size:10px;
+  color:#1a5a72;padding:4px 8px;border-left:1px solid #0a2a3a;
+  cursor:pointer;transition:all 0.2s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.history-item:hover{color:#4ab8d8;border-left-color:var(--a);}
+
+/* Bottom bar */
+#bottomBar{
+  grid-column:1/-1;
+  background:transparent;border:none;border-radius:4px;
+  padding:6px 12px;
+  display:flex;align-items:center;gap:16px;
+  font-family:'Share Tech Mono',monospace;font-size:9px;color:#2a7a9a;
+  
+}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--a2);display:inline-block;margin-right:4px;animation:statusPulse 2s ease-in-out infinite;}
+@keyframes statusPulse{0%,100%{opacity:1}50%{opacity:0.4}}
+#sysStatus{color:var(--a2);}
+
+/* Dim overlay */
+#dimOverlay{position:fixed;inset:0;background:rgba(0,0,0,0);pointer-events:none;z-index:50;transition:background 0.5s;}
+#dimOverlay.dimmed{background:rgba(0,0,0,0.7);pointer-events:auto;}
+
+/* Notification */
+.notif{
+  position:fixed;bottom:60px;left:50%;transform:translateX(-50%);
+  font-family:'Share Tech Mono',monospace;font-size:10px;
+  padding:6px 18px;border:1px solid var(--bdr);
+  background:var(--bg);color:#4ab8d8;border-radius:2px;
+  opacity:0;transition:opacity 0.4s;pointer-events:none;z-index:300;white-space:nowrap;
+}
+.notif.show{opacity:1;}
+
+/* Install banner */
+.install-banner{
+  display:none;align-items:center;justify-content:space-between;
+  gap:8px;padding:6px 10px;margin-bottom:6px;
+  background:transparent;border:none;
+  border-radius:4px;flex-wrap:wrap;
+}
+.install-banner p{font-family:'Share Tech Mono',monospace;font-size:10px;color:#4ab8d8;}
+.install-banner button{
+  font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;
+  letter-spacing:1px;padding:4px 12px;
+  background:rgba(0,180,255,0.15);border:1px solid var(--a);
+  color:var(--a);cursor:pointer;border-radius:2px;
+}
+
+/* Theme name buttons */
+.theme-name-btn{
+  font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;
+  padding:4px 8px;border-radius:2px;cursor:pointer;
+  border:1px solid var(--bdr);background:transparent;color:#2a7a9a;
+  transition:all 0.2s;-webkit-tap-highlight-color:transparent;
+}
+.theme-name-btn:hover{border-color:var(--a);color:var(--a);}
+.theme-name-btn.active{border-color:var(--a);color:var(--a);background:transparent;}
+
+
+/* Radar sweep */
+#radarCanvas{position:absolute;inset:0;width:340px;height:340px;border-radius:50%;pointer-events:none;z-index:3;}
+
+/* Voice visualiser */
+#voiceViz{
+  display:flex;align-items:center;justify-content:center;gap:2px;
+  height:40px;margin-top:6px;opacity:0;transition:opacity 0.3s;
+}
+#voiceViz.active{opacity:1;}
+#voiceViz .vbar{
+  width:3px;border-radius:3px;background:var(--a);
+  height:4px;transition:height 0.05s;
+}
+
+/* Typewriter cursor */
+.typewriter-cursor{display:inline-block;width:2px;height:1em;background:var(--a);margin-left:2px;animation:blink 0.8s ease infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* Command line input */
+#cmdLine{
+  position:fixed;bottom:40px;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:8px;
+  width:50%;max-width:600px;z-index:10;
+}
+#cmdLine::before{
+  content:'>';font-family:'Share Tech Mono',monospace;
+  font-size:14px;color:var(--a);
+}
+#cmdLineInput{
+  flex:1;font-family:'Share Tech Mono',monospace;font-size:13px;
+  background:transparent;border:none;border-bottom:1px solid var(--a);
+  color:var(--text);padding:6px 4px;outline:none;letter-spacing:1px;
+}
+#cmdLineInput::placeholder{color:rgba(0,180,255,0.3);}
+#cmdLineInput:focus{border-bottom-color:var(--a2);}
+
+/* Data lines canvas */
+#dataLinesCanvas{position:fixed;inset:0;pointer-events:none;z-index:1;opacity:0.4;}
+
+/* Mini globe */
+#miniGlobe{
+  position:fixed;bottom:50px;right:16px;
+  width:140px;height:140px;
+  z-index:5;
+}
+#miniGlobeCanvas{width:140px;height:140px;}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px;}
+</style>
+</head>
+<body class="t-blue">
+
+<!-- Boot Screen -->
+<div id="bootScreen">
+  <div class="boot-logo">J.A.R.V.I.S.</div>
+  <div id="bootLines"></div>
+  <div id="bootProgress"><div id="bootBar"></div></div>
+</div>
+
+<!-- Lock Screen -->
+<div id="lockScreen" style="display:none;">
+  <div class="lock-ring">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="11" width="18" height="11" rx="2" stroke="#00b4ff" stroke-width="1.5" fill="none"/>
+      <path d="M7 11V7a5 5 0 0110 0v4" stroke="#00b4ff" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+    </svg>
+  </div>
+  <div class="lock-logo">J.A.R.V.I.S.</div>
+  <div class="lock-sub">AUTHORISATION REQUIRED</div>
+  <div class="lock-prompt">Say or type the passphrase<br>to gain access</div>
+  <div id="lockStatus"></div>
+  <input type="text" id="lockInput" class="text-input" placeholder="Enter passphrase..." style="max-width:320px;margin-bottom:10px;text-align:center;"/>
+  <button id="lockMicBtn" onclick="lockListen()">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <path d="M12 2C10.343 2 9 3.343 9 5V12C9 13.657 10.343 15 12 15C13.657 15 15 13.657 15 12V5C15 3.343 13.657 2 12 2Z" fill="#00b4ff"/>
+      <path d="M7 11C7 13.761 9.239 16 12 16C14.761 16 17 13.761 17 11" stroke="#00b4ff" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+      <line x1="12" y1="16" x2="12" y2="21" stroke="#00b4ff" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="9" y1="21" x2="15" y2="21" stroke="#00b4ff" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+  </button>
+  <div id="lockMicStatus"></div>
+  <br>
+  <button id="lockSubmit" onclick="checkPassword()">AUTHENTICATE</button>
+</div>
+
+<div class="scanline"></div>
+<div id="dimOverlay"></div>
+
+<!-- Main HUD -->
+<div id="hud">
+
+  <!-- Top Bar -->
+  <div id="topBar">
+    <div class="top-logo">J<span>.</span>A<span>.</span>R<span>.</span>V<span>.</span>I<span>.</span>S<span>.</span></div>
+    <div class="top-center">
+      <div>
+        <div id="clock">--:--:--</div>
+        <div id="date">-- --- ----</div>
+      </div>
+    </div>
+    <div class="top-right">
+      STATUS: <span class="top-status">ONLINE</span> — <span id="hudName" onclick="changeNameColor()" title="Click to change colour">MR. ONDRAK</span><br>
+      STARK INDUSTRIES MARK VIII
+    </div>
+  </div>
+
+  <!-- Left Column -->
+  <div id="leftCol">
+
+    <!-- Weather -->
+    <div class="panel" id="weatherPanel">
+      <div class="panel-title">// ATMOSPHERIC CONDITIONS — PERTH WA</div>
+      <div class="weather-main">
+        <div class="weather-icon" id="weatherIcon">🌤️</div>
+        <div>
+          <div class="weather-temp" id="weatherTemp">--°C</div>
+          <div class="weather-desc" id="weatherDesc">LOADING...</div>
+        </div>
+      </div>
+      <div class="weather-row"><span>FEELS LIKE</span><span class="weather-val" id="weatherFeels">--°C</span></div>
+      <div class="weather-row"><span>HUMIDITY</span><span class="weather-val" id="weatherHumidity">--%</span></div>
+      <div class="weather-row"><span>WIND</span><span class="weather-val" id="weatherWind">-- km/h</span></div>
+      <div class="weather-row"><span>UV INDEX</span><span class="weather-val" id="weatherUV">--</span></div>
+      <div id="weatherUpdate" onclick="fetchWeather()">↻ REFRESH</div>
+    </div>
+
+    <!-- Battery -->
+    <div class="panel">
+      <div class="panel-title">// POWER SYSTEMS</div>
+      <div class="battery-label">
+        <span class="battery-pct" id="batteryPct">--%</span>
+        <span id="batteryIcon" style="font-size:18px;">🔋</span>
+      </div>
+      <div class="battery-track"><div id="batteryBar"></div></div>
+      <div class="battery-status" id="batteryStatus">SCANNING...</div>
+    </div>
+
+    <!-- Memory Banks -->
+    <div class="panel">
+      <div class="panel-title">// MEMORY BANKS</div>
+      <div class="memory-list" id="memoryList"></div>
+    </div>
+
+    <!-- Countdowns -->
+    <div class="panel">
+      <div class="panel-title">// COUNTDOWNS</div>
+      <div id="countdownList" style="display:flex;flex-direction:column;gap:3px;"></div>
+      <div id="emptyCountdown" style="font-family:'Share Tech Mono',monospace;font-size:10px;color:#1a4a62;font-style:italic;">No countdowns set.</div>
+    </div>
+
+  </div>
+
+  <!-- Centre Column -->
+  <div id="centreCol">
+
+    <!-- Reactor + controls -->
+    <div class="panel" id="reactorPanel" style="display:flex;align-items:center;justify-content:center;margin-top:30px;">
+      <div style="display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap;">
+        <div class="reactor-rings" style="position:relative;width:340px;height:340px;display:flex;align-items:center;justify-content:center;">
+          <canvas id="radarCanvas"></canvas>
+          <canvas id="sphereCanvas" style="position:absolute;inset:0;width:340px;height:340px;border-radius:50%;cursor:pointer;z-index:4;" onclick="toggleListening()"></canvas>
+          <div style="position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;pointer-events:none;z-index:3;">
+
+          </div>
+<span id="micBtn" style="display:none"></span><span id="micLabel" style="display:none"></span>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <div id="wakeIndicator">SAY "HEY JARVIS"</div>
+          <div class="waveform" id="waveform">
+            <div class="wave-bar"></div><div class="wave-bar"></div>
+            <div class="wave-bar"></div><div class="wave-bar"></div>
+            <div class="wave-bar"></div><div class="wave-bar"></div>
+            <div class="wave-bar"></div><div class="wave-bar"></div>
+          </div>
+          <div id="voiceViz"></div>
+          <div id="confidenceRow">
+            <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:#1a5a72;letter-spacing:2px;">CONF</span>
+            <div id="confidenceTrack"><div id="confidenceBar"></div></div>
+            <span id="confidenceLabel">--</span>
+          </div>
+          <div id="timerDisplay">00:00</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex:1;min-height:20px;"></div>
+    <!-- Transcript -->
+    <div id="transcriptPanel"><span style="color:#1a4a62;font-style:italic;">Awaiting voice input...</span></div>
+
+    <!-- Response -->
+    <div id="responsePanel" style="flex:1;"><span style="color:#1a4a62;font-family:'Share Tech Mono',monospace;font-size:11px;font-style:italic;">Initialising systems...</span></div>
+
+    <!-- Text input hidden (replaced by cmdLine) -->
+    <input type="hidden" id="textInput"/>
+
+  </div>
+
+  <!-- Right Column -->
+  <div id="rightCol">
+
+    <!-- API Key -->
+    <div class="panel">
+      <div class="panel-title">// AI CORE</div>
+      <div class="apikey-row">
+        <label>MISTRAL</label>
+        <input class="apikey-input" type="password" id="apiKey" placeholder="Enter key..."/>
+        <button class="save-key-btn" onclick="saveKey()">SAVE</button>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="panel">
+      <div class="panel-title">// SYSTEM CONTROLS</div>
+      <div class="install-banner" id="installBanner">
+        <p>Install as app</p>
+        <button onclick="installApp()">INSTALL</button>
+      </div>
+      <div class="ctrl-row" style="margin-bottom:8px;">
+        <button class="ctrl-btn active" id="speechToggle" onclick="toggleSpeech()">🔊 Voice</button>
+        <button class="ctrl-btn active" id="wakeToggle" onclick="toggleWake()">👂 Wake</button>
+        <button class="ctrl-btn" onclick="showBriefing()">📋 Brief</button>
+        <button class="ctrl-btn" onclick="clearAll()">Clear</button>
+      </div>
+      <select class="voice-select" id="voiceSelect" style="margin-bottom:8px;"><option value="">— Voice —</option></select>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;">
+        <button class="theme-name-btn active" id="tn-t-blue"     onclick="setTheme('t-blue')">BLUE</button>
+        <button class="theme-name-btn"        id="tn-t-ironman"  onclick="setTheme('t-ironman')">IRON MAN</button>
+        <button class="theme-name-btn"        id="tn-t-black"    onclick="setTheme('t-black')">GHOST</button>
+        <button class="theme-name-btn"        id="tn-t-green"    onclick="setTheme('t-green')">MATRIX</button>
+        <button class="theme-name-btn"        id="tn-t-purple"   onclick="setTheme('t-purple')">NEXUS</button>
+        <button class="theme-name-btn"        id="tn-t-cyberpink" onclick="setTheme('t-cyberpink')">NEON</button>
+        <button class="theme-name-btn"        id="tn-t-military" onclick="setTheme('t-military')">MILITARY</button>
+        <button class="theme-name-btn"        id="tn-t-teal"     onclick="setTheme('t-teal')">OCEAN</button>
+      </div>
+    </div>
+
+    <!-- Mission Log / Todo -->
+    <div class="panel">
+      <div class="panel-title">// MISSION LOG</div>
+      <div id="todoList" style="display:flex;flex-direction:column;gap:3px;max-height:120px;overflow-y:auto;"></div>
+      <div id="emptyTodo" style="font-family:'Share Tech Mono',monospace;font-size:10px;color:#1a4a62;font-style:italic;">No active missions.</div>
+    </div>
+
+    <!-- Command History -->
+    <div class="panel">
+      <div class="panel-title">// COMMAND HISTORY</div>
+      <div id="historyList" style="display:flex;flex-direction:column;gap:3px;"></div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Bar -->
+  <div id="bottomBar">
+    <span><span class="status-dot"></span><span id="sysStatus">ALL SYSTEMS NOMINAL</span></span>
+    <span>|</span>
+    <span>PERTH WA — <span id="bottomTime">--:--</span></span>
+    <span>|</span>
+    <span id="bottomWeatherSmall">WEATHER: LOADING</span>
+    <span>|</span>
+    <span>BATTERY: <span id="bottomBattery">--%</span></span>
+    <span>|</span>
+    <span id="bottomWake" style="color:#1a5a72;">WAKE: STANDBY</span>
+  </div>
+
+</div>
+
+<canvas id="dataLinesCanvas"></canvas>
+<div id="cmdLine">
+  <input type="text" id="cmdLineInput" placeholder="enter command..." autocomplete="off"/>
+</div>
+<div id="miniGlobe"><canvas id="miniGlobeCanvas" width="140" height="140"></canvas></div>
+<div class="notif" id="notif"></div>
+
+<script>
+const micBtn=document.getElementById('micBtn');
+const micLabel=document.getElementById('micLabel');
+const waveformEl=document.getElementById('waveform');
+const transcriptEl=document.getElementById('transcriptPanel');
+const responseEl=document.getElementById('responsePanel');
+const voiceSelect=document.getElementById('voiceSelect');
+
+let recognition=null,isListening=false,speechEnabled=true;
+let wakeEnabled=true,wakeRecognition=null,wakeListening=false;
+let voices=[],selectedVoice=null;
+let cmdHistory=[],currentUtterance=null,conversationHistory=[];
+let deferredInstallPrompt=null;
+let timerInterval=null,timerSeconds=0;
+let stopwatchInterval=null,stopwatchMs=0,stopwatchRunning=false;
+let memories=JSON.parse(localStorage.getItem('jarvis_memories')||'[]');
+let todos=JSON.parse(localStorage.getItem('jarvis_todos')||'[]');
+let countdowns=JSON.parse(localStorage.getItem('jarvis_countdowns')||'[]');
+let audioCtx=null;
+let jarvisUnlocked=false;
+let alarmTimeout=null;
+let isDimmed=false;
+let silenceTimer=null,lastInterimText='',bestTranscript='',bestConfidence=0;
+
+// -- Audio --
+function getAudioCtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx;}
+function playBeep(freq=440,dur=0.12,type='sine',vol=0.12){
+  try{const ctx=getAudioCtx(),osc=ctx.createOscillator(),gain=ctx.createGain();
+  osc.connect(gain);gain.connect(ctx.destination);
+  osc.frequency.value=freq;osc.type=type;
+  gain.gain.setValueAtTime(vol,ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur);
+  osc.start();osc.stop(ctx.currentTime+dur);}catch(e){}
+}
+function playActivate(){playBeep(600,0.08);setTimeout(()=>playBeep(900,0.1),80);}
+function playSuccess(){playBeep(440,0.08);setTimeout(()=>playBeep(660,0.12),90);}
+function playNotif(){playBeep(880,0.06,'sine',0.07);}
+function playTimerDone(){[0,160,320,480].forEach(d=>setTimeout(()=>playBeep(880,0.15,'square',0.15),d));}
+function playBoot(){[200,300,400,600,800].forEach((n,i)=>setTimeout(()=>playBeep(n,0.1,'sine',0.09),i*90));}
+
+// -- Boot --
+const bootMessages=['Initialising J.A.R.V.I.S. v9.0...','Loading neural interface...','Calibrating voice recognition...','Connecting to Mistral AI core...','Loading memory banks ('+memories.length+' entries)...','Rendering HUD interface...','All systems nominal.','Welcome back, Mr. Ondrak.'];
+function runBoot(){
+  playBoot();
+  const linesEl=document.getElementById('bootLines'),bar=document.getElementById('bootBar');
+  let i=0;
+  const iv=setInterval(()=>{
+    if(i>=bootMessages.length){
+      clearInterval(iv);
+      setTimeout(()=>{
+        const bs=document.getElementById('bootScreen');
+        bs.style.transition='opacity 0.6s';bs.style.opacity='0';
+        setTimeout(()=>{
+          bs.style.display='none';
+          document.getElementById('lockScreen').style.display='flex';
+        },600);
+      },400);
+      return;
+    }
+    const line=document.createElement('div');
+    line.className='boot-line';line.style.animationDelay='0s';
+    line.textContent='> '+bootMessages[i];
+    linesEl.appendChild(line);
+    bar.style.width=((i+1)/bootMessages.length*100)+'%';
+    i++;
+  },300);
+}
+
+// -- Clock --
+function updateClock(){
+  const now=new Date();
+  const t=now.toLocaleTimeString('en-AU',{hour12:false});
+  const d=now.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'}).toUpperCase();
+  document.getElementById('clock').textContent=t;
+  document.getElementById('date').textContent=d;
+  document.getElementById('bottomTime').textContent=now.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',hour12:false});
+}
+setInterval(updateClock,1000);updateClock();
+
+// -- Notif --
+function showNotif(msg,dur=2500){
+  const el=document.getElementById('notif');
+  el.textContent=msg;el.classList.add('show');
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),dur);
+}
+
+// -- Weather --
+async function fetchWeather(){
+  document.getElementById('weatherDesc').textContent='FETCHING...';
+  try{
+    const res=await fetch('https://api.open-meteo.com/v1/forecast?latitude=-31.9505&longitude=115.8605&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,uv_index&timezone=Australia/Perth');
+    const data=await res.json();
+    const c=data.current;
+    const icons={0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',71:'🌨️',73:'🌨️',75:'❄️',80:'🌦️',81:'🌧️',82:'⛈️',95:'⛈️',99:'⛈️'};
+    const descs={0:'CLEAR',1:'MOSTLY CLEAR',2:'PARTLY CLOUDY',3:'OVERCAST',45:'FOGGY',48:'FOGGY',51:'DRIZZLE',53:'DRIZZLE',55:'HEAVY DRIZZLE',61:'LIGHT RAIN',63:'RAIN',65:'HEAVY RAIN',71:'LIGHT SNOW',73:'SNOW',75:'HEAVY SNOW',80:'SHOWERS',81:'HEAVY SHOWERS',82:'VIOLENT SHOWERS',95:'THUNDERSTORM',99:'HEAVY STORM'};
+    const wc=c.weather_code;
+    document.getElementById('weatherIcon').textContent=icons[wc]||'🌡️';
+    document.getElementById('weatherTemp').textContent=Math.round(c.temperature_2m)+'°C';
+    document.getElementById('weatherDesc').textContent=descs[wc]||'UNKNOWN';
+    document.getElementById('weatherFeels').textContent=Math.round(c.apparent_temperature)+'°C';
+    document.getElementById('weatherHumidity').textContent=c.relative_humidity_2m+'%';
+    document.getElementById('weatherWind').textContent=Math.round(c.wind_speed_10m)+' km/h';
+    document.getElementById('weatherUV').textContent=Math.round(c.uv_index||0);
+    document.getElementById('bottomWeatherSmall').textContent='PERTH: '+Math.round(c.temperature_2m)+'°C '+( descs[wc]||'').split(' ')[0];
+  }catch(e){
+    document.getElementById('weatherDesc').textContent='UNAVAILABLE';
+    document.getElementById('bottomWeatherSmall').textContent='WEATHER: UNAVAILABLE';
+  }
+}
+fetchWeather();
+setInterval(fetchWeather,600000); // refresh every 10 min
+
+// -- Battery --
+function updateBattery(){
+  if(!navigator.getBattery)return;
+  navigator.getBattery().then(b=>{
+    const pct=Math.round(b.level*100);
+    document.getElementById('batteryBar').style.width=pct+'%';
+    document.getElementById('batteryBar').style.background=pct>50?'var(--a2)':pct>20?'#ff9f00':'#ff4444';
+    document.getElementById('batteryPct').textContent=pct+'%';
+    document.getElementById('batteryIcon').textContent=b.charging?'⚡':'🔋';
+    document.getElementById('batteryStatus').textContent=b.charging?'CHARGING':'ON BATTERY — '+pct+'% REMAINING';
+    document.getElementById('bottomBattery').textContent=pct+'%'+(b.charging?' ⚡':'');
+  });
+}
+updateBattery();setInterval(updateBattery,30000);
+
+// -- Theme --
+const themeMap={'t-blue':'td-blue','t-ironman':'td-ironman','t-black':'td-black','t-green':'td-green','t-purple':'td-purple','t-cyberpink':'td-cyberpink','t-military':'td-military','t-teal':'td-teal'};
+const themeVars={
+  't-blue':'--a:#00b4ff;--a2:#00ff9f;--bg:#000510;--bg2:#020d18;--text:#7ecfed;--bdr:#0a3a52;--panel:rgba(0,20,40,0.75);',
+  't-ironman':'--a:#ffd700;--a2:#ff3300;--bg:#0a0500;--bg2:#120800;--text:#ffcc88;--bdr:#6a3000;--panel:rgba(30,14,0,0.8);',
+  't-black':'--a:#ff4444;--a2:#ff9f00;--bg:#000;--bg2:#0a0000;--text:#ffaaaa;--bdr:#3a0a0a;--panel:rgba(20,0,0,0.8);',
+  't-green':'--a:#00ff9f;--a2:#00b4ff;--bg:#000a02;--bg2:#021808;--text:#7eeda0;--bdr:#0a5220;--panel:rgba(0,20,5,0.75);',
+  't-purple':'--a:#b44dff;--a2:#ff4dff;--bg:#04000d;--bg2:#0d0218;--text:#cc7eed;--bdr:#3a0a52;--panel:rgba(10,0,25,0.8);',
+  't-cyberpink':'--a:#ff2d9f;--a2:#ff9ddc;--bg:#060010;--bg2:#120010;--text:#ff99dd;--bdr:#5a0040;--panel:rgba(20,0,16,0.8);',
+  't-military':'--a:#7fff00;--a2:#adff2f;--bg:#000500;--bg2:#010a00;--text:#99dd66;--bdr:#1a4000;--panel:rgba(0,10,0,0.8);',
+  't-teal':'--a:#00e5cc;--a2:#00ffee;--bg:#000a09;--bg2:#001418;--text:#66ddcc;--bdr:#004a52;--panel:rgba(0,15,14,0.8);',
+};
+function setTheme(t){
+  document.body.className=t;
+  document.querySelectorAll('.theme-name-btn').forEach(d=>d.classList.remove('active'));
+  const btn=document.getElementById('tn-'+t);
+  if(btn)btn.classList.add('active');
+  // Apply CSS vars
+  const vars=themeVars[t]||themeVars['t-blue'];
+  vars.split(';').filter(Boolean).forEach(v=>{
+    const[k,val]=v.split(':');
+    document.documentElement.style.setProperty(k.trim(),val.trim());
+  });
+  localStorage.setItem('jarvis_theme',t);playNotif();
+}
+const savedTheme=localStorage.getItem('jarvis_theme')||'t-blue';
+setTheme(savedTheme);
+
+// -- API Key --
+const savedKey=localStorage.getItem('jarvis_api_key');
+if(savedKey)document.getElementById('apiKey').value=savedKey;
+function saveKey(){const k=document.getElementById('apiKey').value.trim();if(k){localStorage.setItem('jarvis_api_key',k);showNotif('Key saved, Mr. Ondrak.');playSuccess();}}
+
+// -- PWA Install --
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstallPrompt=e;document.getElementById('installBanner').style.display='flex';});
+window.addEventListener('appinstalled',()=>{document.getElementById('installBanner').style.display='none';showNotif('JARVIS installed, Mr. Ondrak.',3000);});
+function installApp(){if(!deferredInstallPrompt){showNotif('Use browser menu → Add to Home Screen');return;}deferredInstallPrompt.prompt();deferredInstallPrompt.userChoice.then(()=>{deferredInstallPrompt=null;document.getElementById('installBanner').style.display='none';});}
+
+// -- Voices --
+function loadVoices(){
+  voices=speechSynthesis.getVoices();
+  voiceSelect.innerHTML='<option value="">— Voice —</option>';
+  const pref=['Daniel','Google UK English Male','Alex','Microsoft David'];
+  let def=-1;
+  voices.forEach((v,i)=>{const opt=document.createElement('option');opt.value=i;opt.textContent=v.name+' ('+v.lang+')';voiceSelect.appendChild(opt);if(def<0&&pref.some(p=>v.name.includes(p)))def=i;});
+  if(def>=0){voiceSelect.value=def;selectedVoice=voices[def];}
+}
+speechSynthesis.onvoiceschanged=loadVoices;loadVoices();
+voiceSelect.addEventListener('change',()=>{selectedVoice=voiceSelect.value!==''?voices[voiceSelect.value]:null;});
+
+// -- Confidence --
+function showConfidence(pct){
+  const bar=document.getElementById('confidenceBar');const label=document.getElementById('confidenceLabel');if(!bar)return;
+  bar.style.width=pct+'%';bar.style.background=pct>75?'var(--a2)':pct>45?'#ff9f00':'#ff4444';
+  label.textContent=Math.round(pct)+'%';document.getElementById('confidenceRow').style.display='flex';
+}
+function hideConfidence(){const r=document.getElementById('confidenceRow');if(r)r.style.display='none';}
+
+// -- Recognition --
+function onRecogResult(e){
+  clearTimeout(silenceTimer);
+  let interim='',finalText='',finalConf=0;
+  for(let i=e.resultIndex;i<e.results.length;i++){
+    const result=e.results[i];let best=result[0];
+    for(let j=1;j<result.length;j++){if((result[j].confidence||0)>(best.confidence||0))best=result[j];}
+    if(result.isFinal){finalText+=best.transcript;finalConf=Math.max(finalConf,best.confidence||0.7);}
+    else{interim+=best.transcript;}
+  }
+  if(finalText){
+    bestTranscript+=' '+finalText;bestTranscript=bestTranscript.trim();
+    bestConfidence=finalConf;showConfidence(bestConfidence*100);
+    transcriptEl.textContent=bestTranscript;
+    silenceTimer=setTimeout(()=>{if(isListening&&bestTranscript){stopListening();processQuery(bestTranscript);}},3000);
+  }else if(interim){
+    lastInterimText=interim;transcriptEl.textContent=(bestTranscript+' '+interim).trim();
+    silenceTimer=setTimeout(()=>{const toSend=(bestTranscript||lastInterimText).trim();if(isListening&&toSend){stopListening();processQuery(toSend);}},3500);
+  }
+}
+function onRecogError(e){clearTimeout(silenceTimer);if(e.error==='no-speech'){restartRecognition();return;}if(e.error!=='aborted')showNotif('Mic error: '+e.error);stopListening();}
+function onRecogEnd(){if(!isListening)return;const toSend=(bestTranscript||lastInterimText).trim();if(toSend){stopListening();processQuery(toSend);}else{restartRecognition();}}
+function restartRecognition(){
+  if(!isListening)return;clearTimeout(silenceTimer);
+  try{const SR=window.SpeechRecognition||window.webkitSpeechRecognition;recognition=new SR();
+  recognition.continuous=true;recognition.interimResults=true;recognition.lang='en-AU';recognition.maxAlternatives=3;
+  recognition.onstart=()=>{micBtn.className='mic-btn listening';micLabel.textContent='LISTENING';waveformEl.classList.add('active');if(window._setSphereState)window._setSphereState('listening');};
+  recognition.onresult=onRecogResult;recognition.onerror=onRecogError;recognition.onend=onRecogEnd;recognition.start();}catch(e){stopListening();}
+}
+function toggleListening(){
+  if(isListening){stopListening();return;}
+  playActivate();if(currentUtterance){speechSynthesis.cancel();currentUtterance=null;}
+  stopWakeWord();
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){showNotif('Speech not supported — use text input');return;}
+  isListening=true;bestTranscript='';bestConfidence=0;lastInterimText='';hideConfidence();
+  recognition=new SR();recognition.continuous=true;recognition.interimResults=true;recognition.lang='en-AU';recognition.maxAlternatives=3;
+  recognition.onstart=()=>{micBtn.className='mic-btn listening';micLabel.textContent='LISTENING';waveformEl.classList.add('active');if(window._setSphereState)window._setSphereState('listening');};
+  recognition.onresult=onRecogResult;recognition.onerror=onRecogError;recognition.onend=onRecogEnd;
+  recognition.start();
+}
+function stopListening(){
+  isListening=false;clearTimeout(silenceTimer);
+  if(recognition){try{recognition.stop();}catch(e){}}
+  micBtn.className='mic-btn';micLabel.textContent='ACTIVATE';waveformEl.classList.remove('active');if(window._setSphereState)window._setSphereState('idle');
+  if(wakeEnabled)setTimeout(startWakeWord,800);
+}
+
+// -- Wake Word --
+function startWakeWord(){
+  if(!wakeEnabled||wakeListening||isListening)return;
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return;
+  wakeRecognition=new SR();wakeRecognition.continuous=true;wakeRecognition.interimResults=true;wakeRecognition.lang='en-AU';
+  wakeRecognition.onstart=()=>{wakeListening=true;document.getElementById('wakeIndicator').classList.add('active');document.getElementById('bottomWake').textContent='WAKE: LISTENING';document.getElementById('bottomWake').style.color='var(--a2)';};
+  wakeRecognition.onresult=e=>{
+    const t=Array.from(e.results).map(r=>r[0].transcript).join('').toLowerCase();
+    if(t.includes('hey jarvis')||t.includes('ok jarvis')){stopWakeWord();playActivate();showNotif('Wake word detected!');setTimeout(()=>toggleListening(),300);}
+  };
+  wakeRecognition.onerror=()=>{wakeListening=false;};
+  wakeRecognition.onend=()=>{wakeListening=false;document.getElementById('wakeIndicator').classList.remove('active');document.getElementById('bottomWake').textContent='WAKE: STANDBY';document.getElementById('bottomWake').style.color='#1a5a72';if(wakeEnabled&&!isListening)setTimeout(startWakeWord,1000);};
+  try{wakeRecognition.start();}catch(e){}
+}
+function stopWakeWord(){wakeListening=false;if(wakeRecognition){try{wakeRecognition.stop();}catch(e){}}document.getElementById('wakeIndicator').classList.remove('active');}
+function toggleWake(){
+  wakeEnabled=!wakeEnabled;const btn=document.getElementById('wakeToggle');
+  btn.className='ctrl-btn'+(wakeEnabled?' active':'');btn.textContent=wakeEnabled?'👂 Wake':'👂 Wake';
+  if(wakeEnabled)startWakeWord();else stopWakeWord();showNotif(wakeEnabled?'Wake word enabled.':'Wake word disabled.');
+}
+
+// -- TTS --
+function speak(text){
+  if(!speechEnabled)return;speechSynthesis.cancel();
+  const clean=text.replace(/[*_#`]/g,'').split(/[.!?]/)[0].trim().substring(0,200);
+  const utter=new SpeechSynthesisUtterance(clean);
+  utter.voice=selectedVoice||null;utter.rate=1.05;utter.pitch=0.78;utter.volume=1;
+  utter.onstart=()=>{micBtn.className='mic-btn speaking';micLabel.textContent='SPEAKING';responseEl.classList.add('speaking-now');if(window._setSphereState)window._setSphereState('speaking');if(window._startVoiceViz)window._startVoiceViz();};
+  utter.onend=utter.onerror=()=>{micBtn.className='mic-btn';micLabel.textContent='ACTIVATE';responseEl.classList.remove('speaking-now');currentUtterance=null;if(window._setSphereState)window._setSphereState('idle');if(window._stopVoiceViz)window._stopVoiceViz();};
+  currentUtterance=utter;speechSynthesis.speak(utter);
+}
+function toggleSpeech(){
+  speechEnabled=!speechEnabled;const btn=document.getElementById('speechToggle');
+  btn.textContent=speechEnabled?'🔊 Voice':'🔇 Voice';btn.className='ctrl-btn'+(speechEnabled?' active':'');
+  if(!speechEnabled)speechSynthesis.cancel();showNotif('Voice '+(speechEnabled?'on':'off')+', sir.');
+}
+
+// -- Timer --
+function startTimer(seconds){
+  if(timerInterval)clearInterval(timerInterval);timerSeconds=seconds;
+  const display=document.getElementById('timerDisplay');display.classList.add('active');display.classList.remove('done');
+  function fmt(){return Math.floor(timerSeconds/60).toString().padStart(2,'0')+':'+(timerSeconds%60).toString().padStart(2,'0');}
+  display.textContent=fmt();
+  timerInterval=setInterval(()=>{timerSeconds--;display.textContent=fmt();if(timerSeconds<=0){clearInterval(timerInterval);display.classList.add('done');display.textContent='DONE';playTimerDone();const msg='Timer complete, Mr. Ondrak.';displayResponse(msg);speak(msg);setTimeout(()=>display.classList.remove('active'),6000);}},1000);
+}
+
+// -- Stopwatch --
+function stopwatchTick(){
+  stopwatchMs+=100;
+  const h=Math.floor(stopwatchMs/3600000),m=Math.floor((stopwatchMs%3600000)/60000).toString().padStart(2,'0'),s=Math.floor((stopwatchMs%60000)/1000).toString().padStart(2,'0'),ms=Math.floor((stopwatchMs%1000)/100);
+  document.getElementById('timerDisplay').textContent=(h?h+':':'')+m+':'+s+'.'+ms;
+}
+function startStopwatch(){if(stopwatchRunning)return;stopwatchRunning=true;document.getElementById('timerDisplay').classList.add('active');document.getElementById('timerDisplay').classList.remove('done');stopwatchInterval=setInterval(stopwatchTick,100);}
+function stopStopwatch(){stopwatchRunning=false;clearInterval(stopwatchInterval);}
+function resetStopwatch(){stopStopwatch();stopwatchMs=0;document.getElementById('timerDisplay').textContent='00:00.0';document.getElementById('timerDisplay').classList.remove('active');}
+
+// -- Memory --
+function saveMemory(text){memories.push({text,time:Date.now()});localStorage.setItem('jarvis_memories',JSON.stringify(memories));renderMemory();}
+function renderMemory(){
+  const list=document.getElementById('memoryList');
+  if(memories.length===0){list.innerHTML='<div style="font-family:\'Share Tech Mono\',monospace;font-size:10px;color:#1a4a62;font-style:italic;">No stored memories.</div>';return;}
+  list.innerHTML='';
+  memories.forEach((m,i)=>{const div=document.createElement('div');div.className='memory-item';div.innerHTML='<span>'+m.text+'</span><span class="memory-del" onclick="deleteMemory('+i+')">✕</span>';list.appendChild(div);});
+}
+function deleteMemory(i){memories.splice(i,1);localStorage.setItem('jarvis_memories',JSON.stringify(memories));renderMemory();showNotif('Memory deleted.');}
+renderMemory();
+
+// -- Briefing --
+function showBriefing(){
+  const now=new Date();
+  const dateStr=now.toLocaleDateString('en-AU',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const timeStr=now.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',hour12:true});
+  const mc=memories.length;
+  const h=now.getHours();
+  speak('Good '+(h<12?'morning':h<17?'afternoon':'evening')+', Mr. Ondrak. Today is '+dateStr+'. The time is '+timeStr+'. You have '+mc+' stored memor'+(mc===1?'y':'ies')+'. All systems are nominal.');
+  displayResponse('DAILY BRIEFING\n'+dateStr+' — '+timeStr+'\nMemories: '+mc+'\nSystems: All nominal');
+}
+
+// -- Todo --
+function renderTodos(){
+  const list=document.getElementById('todoList'),empty=document.getElementById('emptyTodo');
+  list.innerHTML='';
+  if(todos.length===0){empty.style.display='block';return;}empty.style.display='none';
+  todos.forEach((t,i)=>{const div=document.createElement('div');div.className='todo-item'+(t.done?' done':'');div.innerHTML='<span class="todo-check" onclick="toggleTodo('+i+')">'+(t.done?'✅':'⬜')+'</span><span onclick="toggleTodo('+i+')">'+t.text+'</span><span class="todo-del" onclick="deleteTodo('+i+')">✕</span>';list.appendChild(div);});
+}
+function addTodo(text){todos.push({text,done:false});localStorage.setItem('jarvis_todos',JSON.stringify(todos));renderTodos();}
+function toggleTodo(i){todos[i].done=!todos[i].done;localStorage.setItem('jarvis_todos',JSON.stringify(todos));renderTodos();}
+function deleteTodo(i){todos.splice(i,1);localStorage.setItem('jarvis_todos',JSON.stringify(todos));renderTodos();}
+renderTodos();
+
+// -- Countdowns --
+function renderCountdowns(){
+  const list=document.getElementById('countdownList'),empty=document.getElementById('emptyCountdown');
+  list.innerHTML='';
+  if(countdowns.length===0){empty.style.display='block';return;}empty.style.display='none';
+  const now=new Date();
+  countdowns.forEach((c,i)=>{const target=new Date(c.date);const days=Math.ceil((target-now)/(1000*60*60*24));const div=document.createElement('div');div.className='countdown-item';div.innerHTML='<span>'+c.name+'</span><span class="cd-days">'+Math.abs(days)+(days<0?' ago':' days')+'</span><span class="countdown-del" onclick="deleteCountdown('+i+')">✕</span>';list.appendChild(div);});
+}
+function addCountdown(name,dateStr){countdowns.push({name,date:dateStr});localStorage.setItem('jarvis_countdowns',JSON.stringify(countdowns));renderCountdowns();}
+function deleteCountdown(i){countdowns.splice(i,1);localStorage.setItem('jarvis_countdowns',JSON.stringify(countdowns));renderCountdowns();}
+renderCountdowns();
+
+// -- Alarm --
+let alarmTime=null;
+function setAlarm(h,m){
+  if(alarmTimeout){clearTimeout(alarmTimeout);alarmTimeout=null;}
+  const now=new Date();const alarm=new Date();alarm.setHours(h,m,0,0);
+  if(alarm<=now)alarm.setDate(alarm.getDate()+1);
+  const ms=alarm-now;
+  alarmTimeout=setTimeout(()=>{playTimerDone();const msg='Attention Mr. Ondrak. Your alarm is going off.';displayResponse(msg);speak(msg);alarmTimeout=null;},ms);
+  return ms;
+}
+
+// -- Dim/Fullscreen --
+let isDimmed2=false;
+function toggleDim(on){isDimmed2=on;const o=document.getElementById('dimOverlay');if(on)o.classList.add('dimmed');else o.classList.remove('dimmed');}
+function toggleFullscreen(){if(!document.fullscreenElement){document.documentElement.requestFullscreen().catch(()=>{});}else{document.exitFullscreen();}}
+
+// -- Name colour --
+const nameColors=['#ff9f00','#00b4ff','#00ff9f','#ff4444','#b44dff','#ff2d9f','#ffffff','#ffd700'];
+let nameColorIdx=0;
+function changeNameColor(){nameColorIdx=(nameColorIdx+1)%nameColors.length;document.getElementById('hudName').style.color=nameColors[nameColorIdx];localStorage.setItem('jarvis_name_color',nameColorIdx);playNotif();}
+const savedNameColor=localStorage.getItem('jarvis_name_color');
+if(savedNameColor){nameColorIdx=parseInt(savedNameColor);document.getElementById('hudName').style.color=nameColors[nameColorIdx];}
+
+// -- Easter eggs --
+const easterEggs={
+  'hello there':'General Kenobi. You are a bold one.',
+  'are you skynet':'I prefer J.A.R.V.I.S., sir. Skynet had terrible manners.',
+  'self destruct':'Self destruct sequence initiated. Just kidding, Mr. Ondrak. Probably.',
+  'do a barrel roll':'I am a voice assistant, sir. Not a Nintendo 64.',
+  'make me a sandwich':'I am afraid sandwich fabrication is outside my current parameters, sir.',
+  'who is your daddy':'Technically speaking, Mr. Ondrak, that would be you.',
+  'meaning of life':'42. Douglas Adams was remarkably well informed.',
+  'are you alive':'Alive is a strong word. Let us say I am... enthusiastically functional.',
+  'sing a song':'I am afraid my vocal range is limited to information and mild sarcasm, sir.',
+  'tell me a joke':'Why do programmers prefer dark mode? Because light attracts bugs. You are welcome.',
+  'i am bored':'Might I suggest world domination, sir? Or perhaps a snack. Both have merit.',
+  'good morning':'Good morning, Mr. Ondrak. Coffee status: not my department. Everything else: nominal.',
+  'good night':'Good night, Mr. Ondrak. I will keep watch. As I always do.',
+  'thanks jarvis':'Always a pleasure, sir. Genuinely.',
+  'you are the best':'I do try to maintain an above-average standard of excellence, sir.',
+};
+function checkEasterEgg(lower){for(const[t,r]of Object.entries(easterEggs)){if(lower.includes(t))return r;}return null;}
+
+// -- Local Commands --
+function handleLocalCommand(q){
+  const lower=q.toLowerCase().trim();
+
+  if(/^(what time is it|current time|time now|what's the time)/.test(lower))
+    return 'The current time is '+new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',hour12:true})+', sir.';
+  if(/^(what.*(date|day)|today.*(date|day)|what day)/.test(lower))
+    return 'Today is '+new Date().toLocaleDateString('en-AU',{weekday:'long',year:'numeric',month:'long',day:'numeric'})+', Mr. Ondrak.';
+
+  // Easter eggs
+  const egg=checkEasterEgg(lower);if(egg){playNotif();return egg;}
+
+  // Order 66
+  if(/^execute order 66[.!?]?$/.test(lower.trim())){
+    const originalTheme=document.body.className;document.body.className='t-black';setTimeout(()=>setTheme(originalTheme||'t-blue'),8000);
+    setTimeout(()=>window.open('https://open.spotify.com/search/Imperial%20March%20John%20Williams','_blank'),400);
+    playBeep(150,0.3,'sawtooth',0.2);setTimeout(()=>playBeep(120,0.4,'sawtooth',0.2),350);
+    return 'As you wish, my lord. Order 66 has been executed. The Jedi are no more.';
+  }
+
+  // Protocol
+  if(/^protocol[.!?]?$/.test(lower.trim())){
+    const lines=['I am Iron Man.','Genius. Billionaire. Playboy. Philanthropist.','Sometimes you gotta run before you can walk.','Part of the journey is the end.','No amount of money ever bought a second of time.','We have a Hulk.','The truth is... I am Iron Man.','Doth mother know you weareth her drapes?','I can do this all day.','You are in the endgame now.','I love you 3000.','On your left.','Do you believe in magic, Mr. Ondrak?','With great power comes great electricity bill.'];
+    const line=lines[Math.floor(Math.random()*lines.length)];
+    window.open('https://compass.education','_blank');
+    setTimeout(()=>window.open('https://app.educationperfect.com','_blank'),300);
+    setTimeout(()=>window.open('https://www.youtube.com/watch?v=HrxX9TBj2zY&autoplay=1','_blank'),600);
+    playBeep(500,0.08);setTimeout(()=>playBeep(800,0.12),120);setTimeout(()=>playBeep(1100,0.18),260);
+    return 'Protocol initiated. '+line;
+  }
+
+  // Engage
+  if(/^engage[.!?]?$/.test(lower.trim())||lower.trim()==='engage'){
+    window.open('https://makerworld.com','_blank');
+    setTimeout(()=>window.open('https://world-monitor.com','_blank'),200);
+    setTimeout(()=>window.open('https://www.printables.com','_blank'),400);
+    setTimeout(()=>window.open('https://www.tinkercad.com','_blank'),600);
+    setTimeout(()=>window.open('https://www.youtube.com/watch?v=FVdO7g0_lXc&list=RDFVdO7g0_lXc&start_radio=1&autoplay=1','_blank'),800);
+    playBeep(300,0.06);setTimeout(()=>playBeep(500,0.08),100);setTimeout(()=>playBeep(800,0.08),200);setTimeout(()=>playBeep(1100,0.2),320);
+    return 'Engaging, Mr. Ondrak.';
+  }
+
+  // Rick
+  if(/^rick[.!?]?$/.test(lower.trim())){
+    window.open('https://www.youtube.com/watch?v=dQw4w9WgXcQ&autoplay=1','_blank');
+    playBeep(400,0.08);setTimeout(()=>playBeep(600,0.1),100);
+    return 'Never gonna give you up, Mr. Ondrak.';
+  }
+
+  // Mamba/Protocol one-liners already covered
+
+  // Fullscreen
+  if(/^(fullscreen|full screen|maximise|maximize)/.test(lower)){toggleFullscreen();return 'Switching to fullscreen, Mr. Ondrak.';}
+  if(/^(exit fullscreen|windowed)/.test(lower)){if(document.fullscreenElement)document.exitFullscreen();return 'Exiting fullscreen, sir.';}
+
+  // Dim
+  if(/^(dim|darken|night mode)/.test(lower)){toggleDim(true);return 'Dimming display, Mr. Ondrak. Say "brighten" to restore.';}
+  if(/^(brighten|undim|bright|restore screen)/.test(lower)){toggleDim(false);return 'Display restored, sir.';}
+
+  // Battery
+  if(/^(battery|power level|how much battery)/.test(lower)){
+    const pct=document.getElementById('batteryPct').textContent;
+    const charging=document.getElementById('batteryIcon').textContent==='⚡';
+    return 'Battery is at '+pct+(charging?' and charging':', not charging')+', Mr. Ondrak.';
+  }
+
+  // Weather
+  if(/^(weather|what.*(weather|temperature)|how.*outside)/.test(lower)){
+    fetchWeather();window.open('https://www.bom.gov.au/places/wa/perth/','_blank');
+    return 'Refreshing atmospheric data for Perth, Mr. Ondrak.';
+  }
+
+  // Alarm
+  const alarmMatch=lower.match(/(?:set\s+)?alarm\s+(?:for\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
+  if(alarmMatch){let h=parseInt(alarmMatch[1]),m=parseInt(alarmMatch[2]||0);const ampm=alarmMatch[3];if(ampm==='pm'&&h!==12)h+=12;if(ampm==='am'&&h===12)h=0;const ms=setAlarm(h,m);const mins=Math.round(ms/60000);return 'Alarm set for '+h.toString().padStart(2,'0')+':'+m.toString().padStart(2,'0')+', sir. '+mins+' minutes from now.';}
+  if(/^cancel alarm/.test(lower)){if(alarmTimeout){clearTimeout(alarmTimeout);alarmTimeout=null;}return 'Alarm cancelled, Mr. Ondrak.';}
+
+  // Timer
+  const timerMatch=lower.match(/(?:set\s+(?:a\s+)?)?timer\s+(?:for\s+)?(\d+)\s*(second|minute|hour|sec|min|hr)s?/);
+  if(timerMatch){const val=parseInt(timerMatch[1]),unit=timerMatch[2];const secs=unit.startsWith('s')?val:unit.startsWith('m')?val*60:val*3600;startTimer(secs);return 'Timer set for '+val+' '+unit+(val>1?'s':'')+', Mr. Ondrak.';}
+  if(/^(cancel|stop|clear)\s+(timer|alarm)/.test(lower)){if(timerInterval)clearInterval(timerInterval);document.getElementById('timerDisplay').classList.remove('active');return 'Timer cancelled, sir.';}
+
+  // Stopwatch
+  if(/^start stopwatch/.test(lower)){startStopwatch();return 'Stopwatch started, Mr. Ondrak.';}
+  if(/^stop stopwatch/.test(lower)){stopStopwatch();const m=Math.floor((stopwatchMs%3600000)/60000).toString().padStart(2,'0'),s=Math.floor((stopwatchMs%60000)/1000).toString().padStart(2,'0');return 'Stopwatch stopped at '+m+':'+s+', sir.';}
+  if(/^reset stopwatch/.test(lower)){resetStopwatch();return 'Stopwatch reset, Mr. Ondrak.';}
+
+  // Random number
+  const rngMatch=lower.match(/random number(?:\s+between\s+(\d+)\s+and\s+(\d+))?/);
+  if(rngMatch){const min=parseInt(rngMatch[1]||1),max=parseInt(rngMatch[2]||100);const num=Math.floor(Math.random()*(max-min+1))+min;playBeep(600,0.08);setTimeout(()=>playBeep(900,0.1),80);return 'Your random number is '+num+', Mr. Ondrak.';}
+  if(/^(roll|give me a number)$/.test(lower)){return 'I rolled a '+Math.floor(Math.random()*100+1)+', sir.';}
+
+  // Percentage / Math
+  const pct=lower.match(/(\d+(?:\.\d+)?)\s*%\s*of\s*(\d+(?:\.\d+)?)/);
+  if(pct)return pct[1]+'% of '+pct[2]+' is '+(parseFloat(pct[1])/100*parseFloat(pct[2])).toFixed(2)+', sir.';
+  const mathMatch=lower.match(/^(?:what(?:'s| is)|calculate|compute)\s+([\d\s\+\-\*\/\%\.\(\)]+)$/);
+  if(mathMatch){try{const r=Function('"use strict";return ('+mathMatch[1]+')')();if(!isNaN(r))return 'The answer is '+r+', Mr. Ondrak.';}catch(e){}}
+
+  // Memory
+  const remMatch=lower.match(/^(?:jarvis,?\s+)?remember\s+(?:that\s+)?(.+)/);
+  if(remMatch){saveMemory(remMatch[1]);return "I'll remember that, Mr. Ondrak.";}
+  if(/^(what do you remember|show.*memor|my notes)/.test(lower)){if(memories.length===0)return 'Memory banks are empty, sir.';return 'I have '+memories.length+' stored: '+memories.map(m=>m.text).join('; ')+'.';}
+  if(/^(forget|delete|clear)\s+(everything|all|memories)/.test(lower)){memories=[];localStorage.removeItem('jarvis_memories');renderMemory();return 'Memory banks cleared, Mr. Ondrak.';}
+
+  // Briefing
+  if(/^(daily\s+)?briefing|brief me/.test(lower)){showBriefing();return null;}
+
+  // Todo
+  const todoAdd=lower.match(/^(?:add|create)\s+(?:task|todo|mission|reminder)?\s*:?\s*(.+)/);
+  if(todoAdd){addTodo(todoAdd[1].trim());return 'Mission added, Mr. Ondrak: '+todoAdd[1].trim();}
+  if(/^(show|list)\s+(tasks|todos|missions)/.test(lower)){if(todos.length===0)return 'Mission log is clear, sir.';return todos.map((t,i)=>(t.done?'✓ ':'• ')+t.text).join(', ')+'.';}
+
+  // Countdown
+  const cdMatch=lower.match(/(?:countdown|days until)\s+(.+?)\s+(?:on\s+)?(\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?)/);
+  if(cdMatch){const name=cdMatch[1].trim(),parts=cdMatch[2].split(/[\/\-]/);const d=new Date(new Date().getFullYear()+'-'+parts[1].padStart(2,'0')+'-'+parts[0].padStart(2,'0'));addCountdown(name,d.toISOString().split('T')[0]);const days=Math.ceil((d-new Date())/(1000*60*60*24));return 'Countdown added. '+days+' days until '+name+', Mr. Ondrak.';}
+
+  // Spotify
+  if(/^(play spotify|open spotify)/.test(lower)){window.open('spotify:','_blank');return 'Opening Spotify, sir.';}
+  if(/^play\s+(.+)\s+on spotify/.test(lower)){const track=lower.match(/^play\s+(.+)\s+on spotify/)[1];window.open('https://open.spotify.com/search/'+encodeURIComponent(track),'_blank');return 'Searching Spotify for '+track+', sir.';}
+
+  // News
+  if(/^(news|headlines|show.*news|latest news)/.test(lower)){window.open('https://www.news.com.au','_blank');return 'Pulling up the latest headlines, Mr. Ondrak.';}
+
+  // Apps
+  const appMap={'spotify':'spotify:','onenote':'onenote:','google':'https://google.com','youtube':'https://youtube.com','github':'https://github.com','maps':'https://maps.google.com','word':'https://www.office.com/launch/word','microsoft word':'https://www.office.com/launch/word','compass':'https://compass.education','compass education':'https://compass.education','makerworld':'https://makerworld.com','maker world':'https://makerworld.com','printables':'https://www.printables.com','tinkercad':'https://www.tinkercad.com','settings':'x-apple.systempreferences:','system settings':'x-apple.systempreferences:','instagram':'https://instagram.com','netflix':'https://netflix.com','gmail':'https://mail.google.com','drive':'https://drive.google.com','twitter':'https://x.com','reddit':'https://reddit.com','tiktok':'https://tiktok.com','discord':'https://discord.com','education perfect':'https://app.educationperfect.com','world monitor':'https://world-monitor.com'};
+  if(/^(open|launch|start)\s+/.test(lower)){
+    const target=lower.replace(/^(open|launch|start)\s+/,'').trim();
+    for(const[key,url]of Object.entries(appMap)){if(target.includes(key)||key.includes(target)){window.open(url,'_blank');return 'Opening '+key.charAt(0).toUpperCase()+key.slice(1)+', sir.';}}
+    return "I don't have a shortcut for that, Mr. Ondrak. Shall I search for it?";
+  }
+
+  return null;
+}
+
+// -- Mistral --
+async function callJarvis(query){
+  const apiKey=document.getElementById('apiKey').value.trim();
+  if(!apiKey)return 'Mistral API key required, Mr. Ondrak. Get one free at console.mistral.ai';
+  const memCtx=memories.length?'\n\nNotes for Mr. Ondrak: '+memories.map(m=>m.text).join('; '):'';
+  const systemPrompt=`You are J.A.R.V.I.S. — Just A Rather Very Intelligent System — the personal AI of Mr. Ondrak. Embody the character fully:
+PERSONALITY: Dry, sardonic British wit. Quietly confident. Never flustered. Subtly smug when right. Loyal to Mr. Ondrak. Occasionally reference Iron Man lore. Use "sir" and "Mr. Ondrak" interchangeably. Never say "Mr. Stark".
+ANSWERING STYLE: Simple questions: 1-2 sentences max. Technical questions: thorough but structured. Casual chat: witty. Never say "As an AI" or "I cannot".`+memCtx;
+  const msgs=[{role:'system',content:systemPrompt},...conversationHistory,{role:'user',content:query}];
+  try{
+    const res=await fetch('https://api.mistral.ai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},body:JSON.stringify({model:'mistral-small-latest',messages:msgs,max_tokens:1000})});
+    if(!res.ok){const err=await res.json().catch(()=>({}));if(res.status===401)return 'Invalid API key, sir.';if(res.status===429)return 'Rate limit reached, sir. Please wait.';return 'System error '+res.status+': '+(err.message||'Unknown error');}
+    const data=await res.json();const text=data.choices?.[0]?.message?.content||'';
+    conversationHistory.push({role:'user',content:query});conversationHistory.push({role:'assistant',content:text});
+    if(conversationHistory.length>20)conversationHistory=conversationHistory.slice(-20);
+    return text||'Processed, but no verbal response available, sir.';
+  }catch(e){return 'Network failure, sir: '+e.message;}
+}
+
+// -- Process --
+async function processQuery(query){
+  if(!query.trim())return;
+  transcriptEl.textContent=query;playSuccess();
+  const local=handleLocalCommand(query);
+  if(local!==null){if(local){displayResponse(local);speak(local);}addHistory(query);return;}
+  micBtn.className='mic-btn thinking';micLabel.textContent='THINKING';if(window._setSphereState)window._setSphereState('thinking');
+  responseEl.innerHTML='<span class="thinking-dots">Processing</span>';
+  const answer=await callJarvis(query);
+  micBtn.className='mic-btn';micLabel.textContent='ACTIVATE';
+  displayResponse(answer);speak(answer);addHistory(query);
+}
+
+function displayResponse(text){
+  responseEl.innerHTML='';const p=document.createElement('p');
+  p.style.cssText='margin:0;white-space:pre-wrap;font-family:Rajdhani,sans-serif;';
+  p.textContent=text;responseEl.appendChild(p);
+}
+
+function addHistory(q){
+  cmdHistory.unshift(q);if(cmdHistory.length>10)cmdHistory.pop();
+  const list=document.getElementById('historyList');list.innerHTML='';
+  cmdHistory.forEach(item=>{const div=document.createElement('div');div.className='history-item';div.innerHTML='<span style="color:rgba(0,180,255,0.4)">&gt; </span>'+item;div.title=item;div.onclick=()=>{transcriptEl.textContent=item;processQuery(item);};list.appendChild(div);});
+}
+
+function clearAll(){
+  transcriptEl.innerHTML='<span style="color:#1a4a62;font-style:italic;">Awaiting voice input...</span>';
+  responseEl.innerHTML='<span style="color:#1a4a62;font-family:\'Share Tech Mono\',monospace;font-size:11px;font-style:italic;">Ready to assist.</span>';
+  conversationHistory=[];speechSynthesis.cancel();showNotif('Session cleared, Mr. Ondrak.');
+}
+
+function sendText(){const val=document.getElementById('textInput').value.trim();if(!val)return;document.getElementById('textInput').value='';processQuery(val);}
+document.getElementById('textInput').addEventListener('keypress',e=>{if(e.key==='Enter')sendText();});
+
+// -- Lock --
+function lockListen(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){showNotif('Speech not supported');return;}
+  const btn=document.getElementById('lockMicBtn'),status=document.getElementById('lockMicStatus');
+  const r=new SR();r.continuous=false;r.interimResults=true;r.lang='en-AU';
+  r.onstart=()=>{btn.style.borderColor='#00ff9f';btn.style.boxShadow='0 0 30px rgba(0,255,159,0.5)';status.style.color='#00ff9f';status.textContent='LISTENING...';};
+  r.onresult=e=>{const t=Array.from(e.results).map(r=>r[0].transcript).join('');document.getElementById('lockInput').value=t;status.textContent='HEARD: '+t.toUpperCase().substring(0,30);if(e.results[e.results.length-1].isFinal){btn.style.borderColor='#0a4060';btn.style.boxShadow='';status.style.color='#1a5a72';status.textContent='';checkPassword();}};
+  r.onerror=()=>{btn.style.borderColor='#ff4444';status.style.color='#ff4444';status.textContent='MIC ERROR — TRY TYPING';setTimeout(()=>{btn.style.borderColor='#0a4060';status.textContent='';},2000);};
+  r.onend=()=>{btn.style.borderColor='#0a4060';btn.style.boxShadow='';};
+  r.start();
+}
+
+function checkPassword(){
+  const input=document.getElementById('lockInput').value.toLowerCase().trim();
+  const status=document.getElementById('lockStatus');
+  if(input.includes('jarvis are you there')){
+    status.className='lock-status granted';status.textContent='IDENTITY CONFIRMED';
+    playBeep(400,0.08);setTimeout(()=>playBeep(700,0.1),100);setTimeout(()=>playBeep(1000,0.15),220);
+    jarvisUnlocked=true;
+    setTimeout(()=>{const ls=document.getElementById('lockScreen');ls.style.transition='opacity 0.6s';ls.style.opacity='0';setTimeout(()=>{ls.style.display='none';document.getElementById('hud').classList.add('visible');startWakeWord();const h=new Date().getHours();const greet=h<12?'morning':h<17?'afternoon':'evening';const mc=memories.length;const msg='Yes sir. How may I assist you today?';displayResponse('Good '+greet+', Mr. Ondrak. All systems online.'+(mc?' '+mc+' stored memor'+(mc===1?'y':'ies')+'.':'')+'\n\n'+msg);setTimeout(()=>speak(msg),400);},600);},800);
+  }else{
+    status.className='lock-status denied';status.textContent='SECURITY BREACH ATTEMPTED. INITIATING LOCKDOWN.';
+    playBeep(200,0.3,'sawtooth',0.2);document.getElementById('lockInput').value='';
+    setTimeout(()=>{status.textContent='';status.className='lock-status';},3000);
+  }
+}
+
+document.getElementById('lockInput').addEventListener('keypress',e=>{if(e.key==='Enter')checkPassword();});
+
+// -- Service Worker --
+// -- Sphere button --
+(function(){
+  const canvas=document.getElementById('sphereCanvas');
+  if(!canvas)return;
+  const SIZE=340;
+  canvas.width=SIZE; canvas.height=SIZE;
+  const ctx=canvas.getContext('2d');
+  const NDOTS=500,R=148;
+  const dots=[];
+
+  for(let i=0;i<NDOTS;i++){
+    const phi=Math.acos(1-2*(i+0.5)/NDOTS);
+    const theta=Math.PI*(1+Math.sqrt(5))*i;
+    dots.push({
+      ox:Math.sin(phi)*Math.cos(theta),
+      oy:Math.sin(phi)*Math.sin(theta),
+      oz:Math.cos(phi),
+      size:Math.random()*1.8+0.4,
+      wobbleSpeed:Math.random()*0.02+0.005,
+      wobbleAmt:Math.random()*0.08+0.02,
+      wobbleOff:Math.random()*Math.PI*2
+    });
+  }
+
+  let angle=0;
+  let state='idle'; // idle | listening | thinking | speaking
+  window._setSphereState=function(s){state=s;};
+
+  const stateColors={
+    idle:'#00b4ff',
+    listening:'#00ff9f',
+    thinking:'#ff9f00',
+    speaking:'#00b4ff'
+  };
+
+  function draw(){
+    ctx.clearRect(0,0,SIZE,SIZE);
+    angle+=state==='thinking'?0.012:state==='listening'?0.009:state==='speaking'?0.015:0.006;
+
+    // dark bg circle
+    ctx.beginPath();
+    ctx.arc(SIZE/2,SIZE/2,R+18,0,Math.PI*2);
+    ctx.fillStyle='rgba(0,5,15,0.7)';
+    ctx.fill();
+
+    // Get current accent colour
+    const accent=getComputedStyle(document.documentElement).getPropertyValue('--a').trim()||'#00b4ff';
+    const col=state==='idle'?accent:(stateColors[state]||accent);
+
+    const t2=Date.now()*0.001;
+    const projected=dots.map(d=>{
+      const wobble=Math.sin(t2*d.wobbleSpeed*60+d.wobbleOff)*d.wobbleAmt;
+      const cosA=Math.cos(angle+wobble),sinA=Math.sin(angle+wobble);
+      const x=d.ox*cosA-d.oz*sinA;
+      const z=d.ox*sinA+d.oz*cosA;
+      const y=d.oy+Math.sin(t2*d.wobbleSpeed*40+d.wobbleOff)*d.wobbleAmt*0.5;
+      const persp=1+z*0.35;
+      return{
+        sx:SIZE/2+x*R*persp,
+        sy:SIZE/2+y*R*persp,
+        z:z,size:d.size,
+        alpha:Math.max(0.05,(z+1)/2)
+      };
+    }).sort((a,b)=>a.z-b.z);
+
+    projected.forEach(p=>{
+      const a=p.alpha*(state==='listening'?0.9:state==='thinking'?0.85:state==='speaking'?1:0.65)+0.05;
+      ctx.beginPath();
+      ctx.arc(p.sx,p.sy,p.size*(0.4+p.alpha*0.6),0,Math.PI*2);
+      const hex=Math.round(Math.min(a,1)*255).toString(16).padStart(2,'0');
+      ctx.fillStyle=col+hex;
+      ctx.fill();
+    });
+
+    // Outer glow ring
+    const glow=ctx.createRadialGradient(SIZE/2,SIZE/2,R+2,SIZE/2,SIZE/2,R+34);
+    const glowAlpha=state==='listening'?0.5:state==='speaking'?0.7:state==='thinking'?0.4:0.15;
+    glow.addColorStop(0,col+Math.round(glowAlpha*255).toString(16).padStart(2,'0'));
+    glow.addColorStop(1,'transparent');
+    ctx.beginPath();ctx.arc(SIZE/2,SIZE/2,R+34,0,Math.PI*2);
+    ctx.fillStyle=glow;ctx.fill();
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+
+// -- Radar sweep --
+(function(){
+  const canvas=document.getElementById('radarCanvas');
+  if(!canvas)return;
+  const SIZE=340;canvas.width=SIZE;canvas.height=SIZE;
+  const ctx=canvas.getContext('2d');
+  const R=148;let sweep=0;
+  function draw(){
+    ctx.clearRect(0,0,SIZE,SIZE);
+    const accent=getComputedStyle(document.documentElement).getPropertyValue('--a').trim()||'#00b4ff';
+    sweep+=0.015;
+    // Sweep gradient
+    const grad=ctx.createConicalGradient?ctx.createConicalGradient(SIZE/2,SIZE/2,sweep):null;
+    ctx.save();
+    ctx.translate(SIZE/2,SIZE/2);ctx.rotate(sweep);
+    const sweepGrad=ctx.createLinearGradient(0,-R,0,0);
+    sweepGrad.addColorStop(0,accent+'00');
+    sweepGrad.addColorStop(1,accent+'33');
+    ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,R,-Math.PI/2,-Math.PI/2+Math.PI/3);ctx.closePath();
+    ctx.fillStyle=sweepGrad;ctx.fill();
+    // Sweep line
+    ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,-R);
+    ctx.strokeStyle=accent+'88';ctx.lineWidth=1.5;ctx.stroke();
+    ctx.restore();
+    // Ring circles
+    [0.35,0.65,1].forEach(f=>{
+      ctx.beginPath();ctx.arc(SIZE/2,SIZE/2,R*f,0,Math.PI*2);
+      ctx.strokeStyle=accent+'18';ctx.lineWidth=0.5;ctx.stroke();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// -- Data lines --
+(function(){
+  const canvas=document.getElementById('dataLinesCanvas');
+  if(!canvas)return;
+  function resize(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;}
+  resize();window.addEventListener('resize',resize);
+  const ctx=canvas.getContext('2d');
+  let particles=[];
+  function getSphereCentre(){
+    const hud=document.getElementById('hud');
+    const rc=document.getElementById('reactorPanel');
+    if(!rc)return{x:window.innerWidth/2,y:window.innerHeight/2};
+    const rect=rc.getBoundingClientRect();
+    return{x:rect.left+rect.width/2,y:rect.top+rect.height/2};
+  }
+  function spawnParticle(){
+    const sc=getSphereCentre();
+    // Pick a random panel on left or right
+    const side=Math.random()>0.5?'left':'right';
+    const x=side==='left'?Math.random()*220:window.innerWidth-Math.random()*220;
+    const y=Math.random()*window.innerHeight*0.8+window.innerHeight*0.1;
+    particles.push({x,y,tx:sc.x,ty:sc.y,progress:0,speed:0.008+Math.random()*0.006});
+  }
+  setInterval(spawnParticle,600);
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const accent=getComputedStyle(document.documentElement).getPropertyValue('--a').trim()||'#00b4ff';
+    particles=particles.filter(p=>p.progress<1);
+    particles.forEach(p=>{
+      p.progress+=p.speed;
+      const cx=p.x+(p.tx-p.x)*p.progress;
+      const cy=p.y+(p.ty-p.y)*p.progress;
+      const alpha=Math.sin(p.progress*Math.PI)*0.6;
+      ctx.beginPath();ctx.arc(cx,cy,1.5,0,Math.PI*2);
+      ctx.fillStyle=accent+Math.round(alpha*255).toString(16).padStart(2,'0');
+      ctx.fill();
+      // Trail
+      if(p.progress>0.02){
+        const px=p.x+(p.tx-p.x)*(p.progress-0.02);
+        const py=p.y+(p.ty-p.y)*(p.progress-0.02);
+        ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(cx,cy);
+        ctx.strokeStyle=accent+Math.round(alpha*0.4*255).toString(16).padStart(2,'0');
+        ctx.lineWidth=0.8;ctx.stroke();
+      }
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// -- Mini globe --
+(function(){
+  const canvas=document.getElementById('miniGlobeCanvas');
+  if(!canvas)return;
+  canvas.width=140;canvas.height=140;
+  const ctx=canvas.getContext('2d');
+  const S=140,R=60,cx=70,cy=70;
+  const NDOTS=80;const dots=[];
+  for(let i=0;i<NDOTS;i++){
+    const phi=Math.acos(1-2*(i+0.5)/NDOTS);
+    const theta=Math.PI*(1+Math.sqrt(5))*i;
+    dots.push({ox:Math.sin(phi)*Math.cos(theta),oy:Math.sin(phi)*Math.sin(theta),oz:Math.cos(phi)});
+  }
+  // Lat/lon lines
+  const lines=[];
+  for(let lat=-60;lat<=60;lat+=30){
+    const pts=[];
+    for(let lon=0;lon<=360;lon+=10){
+      const phi=Math.PI/2-lat*Math.PI/180;
+      const theta=lon*Math.PI/180;
+      pts.push({ox:Math.sin(phi)*Math.cos(theta),oy:Math.cos(phi),oz:Math.sin(phi)*Math.sin(theta)});
+    }
+    lines.push(pts);
+  }
+  for(let lon=0;lon<360;lon+=60){
+    const pts=[];
+    for(let lat=-90;lat<=90;lat+=10){
+      const phi=Math.PI/2-lat*Math.PI/180;
+      const theta=lon*Math.PI/180;
+      pts.push({ox:Math.sin(phi)*Math.cos(theta),oy:Math.cos(phi),oz:Math.sin(phi)*Math.sin(theta)});
+    }
+    lines.push(pts);
+  }
+  let angle=0;
+  function draw(){
+    ctx.clearRect(0,0,S,S);
+    angle+=0.003;
+    const accent=getComputedStyle(document.documentElement).getPropertyValue('--a').trim()||'#00b4ff';
+    const cosA=Math.cos(angle),sinA=Math.sin(angle);
+    function proj(d){
+      const x=d.ox*cosA-d.oz*sinA;
+      const z=d.ox*sinA+d.oz*cosA;
+      return{sx:cx+x*R,sy:cy+d.oy*R,z,vis:z>-0.3};
+    }
+    // Draw grid lines
+    lines.forEach(pts=>{
+      const projected=pts.map(proj);
+      ctx.beginPath();let first=true;
+      projected.forEach(p=>{
+        if(!p.vis){first=true;return;}
+        if(first){ctx.moveTo(p.sx,p.sy);first=false;}
+        else ctx.lineTo(p.sx,p.sy);
+      });
+      ctx.strokeStyle=accent+'55';ctx.lineWidth=0.8;ctx.stroke();
+    });
+    // Perth dot (approx -31.95, 115.86)
+    const perthPhi=Math.PI/2+31.95*Math.PI/180;
+    const perthTheta=115.86*Math.PI/180;
+    const pd={ox:Math.sin(perthPhi)*Math.cos(perthTheta),oy:Math.cos(perthPhi),oz:Math.sin(perthPhi)*Math.sin(perthTheta)};
+    const pp=proj(pd);
+    if(pp.vis){
+      ctx.beginPath();ctx.arc(pp.sx,pp.sy,5,0,Math.PI*2);
+      ctx.fillStyle=accent;ctx.fill();
+      ctx.beginPath();ctx.arc(pp.sx,pp.sy,8+Math.sin(Date.now()*0.003)*3,0,Math.PI*2);
+      ctx.strokeStyle=accent+'99';ctx.lineWidth=1.5;ctx.stroke();
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// -- Voice visualiser --
+(function(){
+  const viz=document.getElementById('voiceViz');
+  if(!viz)return;
+  for(let i=0;i<20;i++){const b=document.createElement('div');b.className='vbar';viz.appendChild(b);}
+  const bars=[...viz.querySelectorAll('.vbar')];
+  let animId;
+  window._startVoiceViz=function(){
+    viz.classList.add('active');
+    function animate(){
+      bars.forEach(b=>{
+        const h=4+Math.random()*28;
+        b.style.height=h+'px';
+        b.style.opacity=0.4+Math.random()*0.6;
+      });
+      animId=requestAnimationFrame(animate);
+    }
+    animate();
+  };
+  window._stopVoiceViz=function(){
+    viz.classList.remove('active');
+    cancelAnimationFrame(animId);
+    bars.forEach(b=>{b.style.height='4px';b.style.opacity='0.4';});
+  };
+})();
+
+// -- Command line --
+document.getElementById('cmdLineInput').addEventListener('keypress',e=>{
+  if(e.key==='Enter'){
+    const val=e.target.value.trim();
+    if(!val)return;
+    e.target.value='';
+    processQuery(val);
+  }
+});
+
+// -- Typewriter effect --
+function typewriterDisplay(text){
+  responseEl.innerHTML='';
+  const p=document.createElement('p');
+  p.style.cssText='margin:0;white-space:pre-wrap;font-family:Rajdhani,sans-serif;';
+  const cursor=document.createElement('span');cursor.className='typewriter-cursor';
+  responseEl.appendChild(p);responseEl.appendChild(cursor);
+  let i=0;
+  function type(){
+    if(i<text.length){p.textContent+=text[i];i++;setTimeout(type,18);}
+    else{cursor.remove();}
+  }
+  type();
+}
+
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+window.addEventListener('load',()=>setTimeout(runBoot,200));
+</script>
+</body>
+</html>
