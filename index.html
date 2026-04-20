@@ -1099,15 +1099,86 @@ function handleLocalCommand(q){
     return 'Protocol initiated. '+line;
   }
 
-  // Engage
-  if(/^engage[.!?]?$/.test(lower.trim())||lower.trim()==='engage'){
+  // Drop the needle (old engage)
+  if(/^drop the needle[.!?]?$/.test(lower.trim())){
     window.open('https://makerworld.com','_blank');
     setTimeout(()=>window.open('https://world-monitor.com','_blank'),200);
     setTimeout(()=>window.open('https://www.printables.com','_blank'),400);
     setTimeout(()=>window.open('https://www.tinkercad.com','_blank'),600);
     setTimeout(()=>window.open('https://www.youtube.com/watch?v=FVdO7g0_lXc&list=RDFVdO7g0_lXc&start_radio=1&autoplay=1','_blank'),800);
     playBeep(300,0.06);setTimeout(()=>playBeep(500,0.08),100);setTimeout(()=>playBeep(800,0.08),200);setTimeout(()=>playBeep(1100,0.2),320);
-    return 'Engaging, Mr. Ondrak.';
+    return 'Dropping the needle, Mr. Ondrak.';
+  }
+
+  // Engage — Lock & Load protocol
+  if(/^engage[.!?]?$/.test(lower.trim())||lower.trim()==='engage'){
+    // Open school tools
+    window.open('https://stile.com','_blank');
+    setTimeout(()=>window.open('https://compass.education','_blank'),600);
+    // Sound: rising lock-on beeps
+    playBeep(400,0.07);setTimeout(()=>playBeep(600,0.08),120);setTimeout(()=>playBeep(900,0.1),260);setTimeout(()=>playBeep(1200,0.18),420);
+    // Mission briefing overlay
+    setTimeout(()=>{
+      const existing=document.getElementById('lockload-overlay');
+      if(existing)existing.remove();
+      const overlay=document.createElement('div');
+      overlay.id='lockload-overlay';
+      const now=new Date();
+      const battPct=document.getElementById('batteryPct')?document.getElementById('batteryPct').textContent:'--';
+      const battChg=document.getElementById('batteryIcon')?document.getElementById('batteryIcon').textContent==='⚡':false;
+      const weatherTemp=document.getElementById('weatherTemp')?document.getElementById('weatherTemp').textContent:'--';
+      const weatherDesc=document.getElementById('weatherDesc')?document.getElementById('weatherDesc').textContent:'--';
+      const todoCount=todos.filter(t=>!t.done).length;
+      const memCount=memories.length;
+      overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.88);z-index:9999;display:flex;align-items:center;justify-content:center;animation:llFadeIn 0.4s ease;';
+      overlay.innerHTML=`
+        <style>
+          @keyframes llFadeIn{from{opacity:0}to{opacity:1}}
+          @keyframes llFadeOut{from{opacity:1}to{opacity:0}}
+          @keyframes llScanIn{from{transform:translateY(-24px);opacity:0}to{transform:translateY(0);opacity:1}}
+          @keyframes llBar{from{width:0}to{width:100%}}
+          .ll-inner{border:1px solid rgba(0,180,255,0.5);padding:44px 60px;min-width:460px;font-family:'Share Tech Mono',monospace;animation:llScanIn 0.5s ease;position:relative;}
+          .ll-inner::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#00b4ff,transparent);animation:llBar 0.8s ease forwards;}
+          .ll-tag{font-size:10px;color:rgba(0,180,255,0.5);letter-spacing:0.22em;margin-bottom:18px;}
+          .ll-title{font-family:'Rajdhani',sans-serif;font-size:30px;font-weight:700;color:#00b4ff;letter-spacing:0.3em;margin-bottom:30px;text-shadow:0 0 20px rgba(0,180,255,0.6);}
+          .ll-divider{border:none;border-top:1px solid rgba(0,180,255,0.15);margin:16px 0;}
+          .ll-row{font-size:12px;color:#4ab8d8;margin:10px 0;letter-spacing:0.08em;display:flex;gap:12px;align-items:center;}
+          .ll-row .ll-label{color:rgba(0,180,255,0.5);min-width:140px;}
+          .ll-green{color:#00ff88;}
+          .ll-amber{color:#ff9f00;}
+          .ll-blue{color:#00b4ff;}
+          .ll-sub{font-size:9px;color:rgba(255,255,255,0.2);margin-top:28px;letter-spacing:0.15em;text-align:center;}
+        </style>
+        <div class="ll-inner">
+          <div class="ll-tag">// LOCK &amp; LOAD PROTOCOL — ENGAGED</div>
+          <div class="ll-title">MISSION BRIEFING</div>
+          <div class="ll-row"><span class="ll-label">JARVIS STATUS</span><span class="ll-green">ALL SYSTEMS NOMINAL</span></div>
+          <div class="ll-row"><span class="ll-label">STILE</span><span class="ll-green">ONLINE ↗</span></div>
+          <div class="ll-row"><span class="ll-label">COMPASS</span><span class="ll-green">ONLINE ↗</span></div>
+          <hr class="ll-divider">
+          <div class="ll-row"><span class="ll-label">BATTERY</span><span class="${battChg?'ll-green':'ll-amber'}">${battPct}${battChg?' — CHARGING':''}</span></div>
+          <div class="ll-row"><span class="ll-label">PERTH WEATHER</span><span class="ll-blue">${weatherTemp} — ${weatherDesc}</span></div>
+          <div class="ll-row"><span class="ll-label">ACTIVE MISSIONS</span><span class="${todoCount>0?'ll-amber':'ll-green'}">${todoCount} PENDING</span></div>
+          <div class="ll-row"><span class="ll-label">MEMORY BANKS</span><span class="ll-blue">${memCount} ENTR${memCount===1?'Y':'IES'}</span></div>
+          <hr class="ll-divider">
+          <div class="ll-row"><span class="ll-label">TIMESTAMP</span><span class="ll-blue">${now.toLocaleTimeString('en-AU',{hour12:false})} — ${now.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}).toUpperCase()}</span></div>
+          <div class="ll-row"><span class="ll-label">LOCATION LOCK</span><span class="ll-green">PERTH, WESTERN AUSTRALIA</span></div>
+          <div class="ll-sub">CLEARANCE: ALPHA · TAP TO DISMISS</div>
+        </div>`;
+      overlay.addEventListener('click',()=>{
+        overlay.style.animation='llFadeOut 0.35s ease forwards';
+        setTimeout(()=>overlay.remove(),350);
+      });
+      document.body.appendChild(overlay);
+      // Auto-dismiss after 6 seconds
+      setTimeout(()=>{
+        if(document.getElementById('lockload-overlay')){
+          overlay.style.animation='llFadeOut 0.35s ease forwards';
+          setTimeout(()=>overlay.remove(),350);
+        }
+      },6000);
+    },500);
+    return 'Lock and load, Mr. Ondrak. Stile and Compass are coming online. All systems nominal.';
   }
 
   // Rick
@@ -1458,75 +1529,120 @@ document.getElementById('lockInput').addEventListener('keypress',e=>{if(e.key===
   draw();
 })();
 
-// -- Mini globe --
+// -- Mini globe with country outlines --
 (function(){
   const canvas=document.getElementById('miniGlobeCanvas');
   if(!canvas)return;
   canvas.width=140;canvas.height=140;
   const ctx=canvas.getContext('2d');
-  const S=140,R=60,cx=70,cy=70;
-  const NDOTS=80;const dots=[];
-  for(let i=0;i<NDOTS;i++){
-    const phi=Math.acos(1-2*(i+0.5)/NDOTS);
-    const theta=Math.PI*(1+Math.sqrt(5))*i;
-    dots.push({ox:Math.sin(phi)*Math.cos(theta),oy:Math.sin(phi)*Math.sin(theta),oz:Math.cos(phi)});
-  }
-  // Lat/lon lines
-  const lines=[];
-  for(let lat=-60;lat<=60;lat+=30){
-    const pts=[];
-    for(let lon=0;lon<=360;lon+=10){
-      const phi=Math.PI/2-lat*Math.PI/180;
-      const theta=lon*Math.PI/180;
-      pts.push({ox:Math.sin(phi)*Math.cos(theta),oy:Math.cos(phi),oz:Math.sin(phi)*Math.sin(theta)});
-    }
-    lines.push(pts);
-  }
-  for(let lon=0;lon<360;lon+=60){
-    const pts=[];
-    for(let lat=-90;lat<=90;lat+=10){
-      const phi=Math.PI/2-lat*Math.PI/180;
-      const theta=lon*Math.PI/180;
-      pts.push({ox:Math.sin(phi)*Math.cos(theta),oy:Math.cos(phi),oz:Math.sin(phi)*Math.sin(theta)});
-    }
-    lines.push(pts);
-  }
+  const R=62,cx=70,cy=70;
   let angle=0;
-  function draw(){
-    ctx.clearRect(0,0,S,S);
-    angle+=0.003;
-    const accent=getComputedStyle(document.documentElement).getPropertyValue('--a').trim()||'#00b4ff';
-    const cosA=Math.cos(angle),sinA=Math.sin(angle);
-    function proj(d){
-      const x=d.ox*cosA-d.oz*sinA;
-      const z=d.ox*sinA+d.oz*cosA;
-      return{sx:cx+x*R,sy:cy+d.oy*R,z,vis:z>-0.3};
-    }
-    // Draw grid lines
-    lines.forEach(pts=>{
-      const projected=pts.map(proj);
-      ctx.beginPath();let first=true;
-      projected.forEach(p=>{
-        if(!p.vis){first=true;return;}
-        if(first){ctx.moveTo(p.sx,p.sy);first=false;}
-        else ctx.lineTo(p.sx,p.sy);
-      });
-      ctx.strokeStyle=accent+'55';ctx.lineWidth=0.8;ctx.stroke();
-    });
-    // Perth dot (approx -31.95, 115.86)
-    const perthPhi=Math.PI/2+31.95*Math.PI/180;
-    const perthTheta=115.86*Math.PI/180;
-    const pd={ox:Math.sin(perthPhi)*Math.cos(perthTheta),oy:Math.cos(perthPhi),oz:Math.sin(perthPhi)*Math.sin(perthTheta)};
-    const pp=proj(pd);
-    if(pp.vis){
-      ctx.beginPath();ctx.arc(pp.sx,pp.sy,5,0,Math.PI*2);
-      ctx.fillStyle=accent;ctx.fill();
-      ctx.beginPath();ctx.arc(pp.sx,pp.sy,8+Math.sin(Date.now()*0.003)*3,0,Math.PI*2);
-      ctx.strokeStyle=accent+'99';ctx.lineWidth=1.5;ctx.stroke();
-    }
-    requestAnimationFrame(draw);
+  let geoData=null;
+
+  // Convert lon/lat to 3D sphere point
+  function toXYZ(lon,lat){
+    const phi=(90-lat)*Math.PI/180;
+    const theta=lon*Math.PI/180;
+    return{
+      ox:Math.sin(phi)*Math.cos(theta),
+      oy:Math.cos(phi),
+      oz:Math.sin(phi)*Math.sin(theta)
+    };
   }
-  draw();
+
+  function proj(p,cosA,sinA){
+    const x=p.ox*cosA-p.oz*sinA;
+    const z=p.ox*sinA+p.oz*cosA;
+    return{sx:cx+x*R,sy:cy-p.oy*R,z,vis:z>0};
+  }
+
+  function drawGlobe(){
+    ctx.clearRect(0,0,140,140);
+    angle+=0.004;
+    const cosA=Math.cos(angle),sinA=Math.sin(angle);
+    const accent=getComputedStyle(document.documentElement).getPropertyValue('--a').trim()||'#00b4ff';
+
+    // Ocean background circle
+    ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);
+    ctx.fillStyle='rgba(0,10,20,0.6)';ctx.fill();
+    ctx.strokeStyle=accent+'33';ctx.lineWidth=1;ctx.stroke();
+
+    if(geoData){
+      geoData.features.forEach(f=>{
+        if(!f.geometry)return;
+        const geoms=f.geometry.type==='Polygon'?[f.geometry.coordinates]:
+                   f.geometry.type==='MultiPolygon'?f.geometry.coordinates:[];
+        geoms.forEach(poly=>{
+          poly.forEach(ring=>{
+            const pts=ring.map(c=>toXYZ(c[0],c[1]));
+            const projected=pts.map(p=>proj(p,cosA,sinA));
+            // Only draw if majority visible
+            const visCount=projected.filter(p=>p.vis).length;
+            if(visCount<2)return;
+            ctx.beginPath();
+            let first=true;
+            projected.forEach((p,i)=>{
+              if(!p.vis){first=true;return;}
+              if(first){ctx.moveTo(p.sx,p.sy);first=false;}
+              else ctx.lineTo(p.sx,p.sy);
+            });
+            ctx.fillStyle=accent+'18';
+            ctx.fill();
+            ctx.strokeStyle=accent+'66';
+            ctx.lineWidth=0.6;
+            ctx.stroke();
+          });
+        });
+      });
+    } else {
+      // Fallback: lat/lon grid while loading
+      for(let lat=-60;lat<=60;lat+=30){
+        ctx.beginPath();let first=true;
+        for(let lon=0;lon<=360;lon+=8){
+          const p=proj(toXYZ(lon,lat),cosA,sinA);
+          if(!p.vis){first=true;continue;}
+          if(first){ctx.moveTo(p.sx,p.sy);first=false;}
+          else ctx.lineTo(p.sx,p.sy);
+        }
+        ctx.strokeStyle=accent+'33';ctx.lineWidth=0.5;ctx.stroke();
+      }
+    }
+
+    // Perth dot
+    const perth=proj(toXYZ(115.86,-31.95),cosA,sinA);
+    if(perth.vis){
+      ctx.beginPath();ctx.arc(perth.sx,perth.sy,4,0,Math.PI*2);
+      ctx.fillStyle=accent;ctx.fill();
+      const pulse=4+Math.sin(Date.now()*0.004)*3;
+      ctx.beginPath();ctx.arc(perth.sx,perth.sy,pulse+4,0,Math.PI*2);
+      ctx.strokeStyle=accent+'88';ctx.lineWidth=1.5;ctx.stroke();
+    }
+
+    requestAnimationFrame(drawGlobe);
+  }
+
+  // Embedded simplified country/continent polygons [lon, lat]
+  // Based on Natural Earth simplified outlines
+  const COUNTRIES=[
+    // Australia
+    [[113,-22],[114,-21],[116,-21],[119,-20],[122,-18],[126,-14],[129,-15],[131,-12],[132,-12],[136,-12],[137,-13],[139,-15],[140,-18],[141,-17],[142,-11],[143,-15],[145,-19],[146,-21],[148,-20],[150,-24],[151,-24],[152,-27],[153,-28],[153,-29],[152,-30],[152,-33],[151,-34],[150,-36],[148,-38],[146,-39],[145,-38],[144,-38],[143,-39],[142,-38],[140,-36],[139,-34],[138,-35],[137,-36],[136,-36],[135,-35],[134,-33],[133,-32],[132,-32],[130,-31],[129,-33],[126,-34],[125,-35],[124,-34],[122,-34],[120,-34],[118,-35],[116,-35],[115,-33],[115,-31],[113,-30],[113,-26],[113,-22]],
+    // North America (simplified)
+    [[-168,72],[-140,72],[-120,72],[-100,72],[-85,68],[-80,63],[-75,60],[-65,60],[-60,55],[-55,50],[-53,47],[-55,46],[-60,44],[-65,42],[-70,41],[-72,41],[-74,40],[-76,35],[-80,32],[-82,30],[-85,30],[-88,30],[-90,29],[-94,29],[-97,26],[-100,23],[-105,22],[-110,24],[-115,28],[-117,32],[-120,34],[-122,37],[-124,40],[-124,46],[-122,50],[-126,50],[-130,55],[-136,58],[-140,60],[-145,60],[-150,61],[-153,58],[-155,59],[-160,58],[-162,60],[-164,63],[-168,68],[-168,72]],
+    // South America
+    [[-80,10],[-77,8],[-75,10],[-72,12],[-68,12],[-65,11],[-63,10],[-60,6],[-58,4],[-52,4],[-50,2],[-50,-1],[-48,-3],[-44,-3],[-40,-3],[-37,-5],[-35,-8],[-35,-12],[-38,-18],[-40,-22],[-42,-22],[-44,-24],[-48,-28],[-50,-30],[-52,-33],[-55,-35],[-58,-38],[-60,-40],[-62,-45],[-65,-48],[-66,-52],[-65,-55],[-68,-55],[-70,-52],[-73,-50],[-75,-48],[-75,-42],[-73,-38],[-72,-35],[-70,-32],[-70,-28],[-68,-25],[-66,-22],[-70,-18],[-72,-15],[-75,-12],[-78,-8],[-80,-3],[-80,0],[-80,5],[-80,10]],
+    // Europe (simplified)
+    [[-10,36],[-8,37],[-8,39],[-8,42],[-8,44],[-2,44],[0,44],[3,43],[5,43],[8,44],[10,44],[12,44],[14,44],[16,46],[18,46],[20,48],[22,48],[24,48],[26,46],[28,46],[30,48],[30,50],[28,54],[24,56],[22,60],[20,60],[18,58],[16,58],[14,56],[12,56],[10,56],[8,58],[5,58],[2,58],[0,58],[-2,54],[-4,52],[-6,52],[-8,48],[-8,46],[-6,44],[-4,44],[-2,42],[-4,40],[-6,38],[-8,38],[-10,36]],
+    // Africa
+    [[-16,16],[-15,12],[-14,10],[-12,8],[-10,5],[-8,4],[-5,4],[-2,5],[2,5],[4,4],[8,4],[9,4],[10,2],[12,2],[14,4],[16,4],[18,4],[22,4],[24,2],[28,2],[30,0],[34,-2],[36,-4],[40,-8],[40,-12],[38,-16],[36,-20],[35,-24],[32,-26],[30,-30],[28,-34],[26,-36],[24,-34],[22,-34],[20,-34],[18,-34],[16,-32],[14,-28],[12,-24],[10,-18],[8,-14],[4,-4],[4,4],[2,8],[0,12],[-2,14],[-4,16],[-8,16],[-10,14],[-12,16],[-14,16],[-16,16]],
+    // Asia (simplified)
+    [[30,42],[32,42],[36,42],[40,42],[44,40],[48,38],[52,36],[56,36],[60,36],[64,32],[68,28],[72,24],[76,20],[80,16],[84,20],[88,24],[90,24],[92,22],[96,22],[100,20],[104,20],[108,18],[110,20],[112,22],[116,24],[120,26],[124,28],[128,32],[130,34],[132,38],[134,40],[136,40],[138,36],[140,38],[142,40],[142,46],[138,50],[132,48],[128,50],[124,52],[120,54],[116,54],[112,56],[108,56],[104,54],[100,56],[96,56],[92,54],[88,52],[84,52],[80,50],[76,48],[72,46],[68,46],[64,44],[60,44],[56,44],[52,46],[48,46],[44,44],[40,44],[36,44],[32,44],[30,42]],
+    // Greenland (simplified)
+    [[-44,60],[-42,62],[-38,64],[-34,66],[-30,68],[-26,70],[-22,72],[-18,76],[-20,80],[-30,84],[-40,84],[-50,82],[-56,80],[-60,76],[-64,72],[-66,68],[-64,64],[-60,62],[-56,60],[-52,60],[-48,60],[-44,60]],
+  ];
+
+  geoData={features:COUNTRIES.map(ring=>({geometry:{type:'Polygon',coordinates:[ring.map(([lon,lat])=>[lon,lat])]}}))}; 
+
+  drawGlobe();
 })();
 
 // -- Voice visualiser --
