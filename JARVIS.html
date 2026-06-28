@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000">
+<title>J.A.R.V.I.S.</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&display=swap');
+
+  :root {
+    --arc: #00c8ff;
+    --arc-dim: rgba(0,200,255,0.15);
+    --arc-glow: rgba(0,200,255,0.6);
+    --arc-border: rgba(0,200,255,0.35);
+    --red: #ff3b3b;
+    --gold: #ffd700;
+    --bg: #000408;
+    --panel: rgba(0,14,28,0.85);
+    --panel-border: rgba(0,200,255,0.2);
+    --text: #cceeff;
+    --text-dim: rgba(180,230,255,0.5);
+    --font: 'Share Tech Mono', monospace;
+    --font-display: 'Orbitron', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* GRID BG */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,200,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,200,255,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* SCANLINE */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 3px,
+      rgba(0,0,0,0.08) 3px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  #app { position: relative; z-index: 2; }
+
+  /* ── LOCK SCREEN ── */
+  #lockscreen {
+    position: fixed;
+    inset: 0;
+    background: #000408;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    z-index: 1000;
+    transition: opacity 0.8s ease;
+  }
+
+  .lock-logo {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 8vw, 4rem);
+    font-weight: 900;
+    letter-spacing: 0.3em;
+    color: var(--arc);
+    text-shadow: 0 0 30px var(--arc-glow), 0 0 60px rgba(0,200,255,0.3);
+    animation: pulse-text 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-text {
+    0%,100% { text-shadow: 0 0 20px var(--arc-glow), 0 0 40px rgba(0,200,255,0.25); }
+    50% { text-shadow: 0 0 40px var(--arc-glow), 0 0 80px rgba(0,200,255,0.5); }
+  }
+
+  .lock-sub {
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    letter-spacing: 0.4em;
+    color: var(--text-dim);
+  }
+
+  .lock-ring {
+    width: 160px; height: 160px;
+    border-radius: 50%;
+    border: 1px solid var(--arc-border);
+    position: relative;
+    animation: spin-slow 8s linear infinite;
+  }
+  .lock-ring::before {
+    content: '';
+    position: absolute;
+    inset: 8px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,200,255,0.1);
+    animation: spin-slow 5s linear infinite reverse;
+  }
+  .lock-ring::after {
+    content: '';
+    position: absolute;
+    inset: 20px;
+    border-radius: 50%;
+    border-top: 2px solid var(--arc);
+    border-right: 2px solid transparent;
+    border-bottom: 2px solid transparent;
+    border-left: 2px solid transparent;
+    animation: spin-slow 2s linear infinite;
+  }
+  @keyframes spin-slow { to { transform: rotate(360deg); } }
+
+  .lock-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: var(--text-dim);
+    text-align: center;
+  }
+
+  .lock-input-wrap { display: flex; gap: 0.5rem; align-items: center; }
+
+  .lock-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--arc-border);
+    color: var(--arc);
+    font-family: var(--font);
+    font-size: 0.9rem;
+    letter-spacing: 0.15em;
+    padding: 0.5rem 0.75rem;
+    outline: none;
+    width: 200px;
+    text-align: center;
+  }
+
+  .lock-btn {
+    background: transparent;
+    border: 1px solid var(--arc-border);
+    color: var(--arc);
+    font-family: var(--font-display);
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    padding: 0.5rem 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .lock-btn:hover { background: var(--arc-dim); border-color: var(--arc); }
+
+  #lock-error {
+    font-size: 0.7rem;
+    color: var(--red);
+    letter-spacing: 0.1em;
+    height: 1rem;
+  }
+
+  /* ── MAIN LAYOUT ── */
+  #main { display: none; padding: 1rem; max-width: 1400px; margin: 0 auto; }
+
+  /* TOP BAR */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.5rem;
+    border: 1px solid var(--panel-border);
+    background: var(--panel);
+    margin-bottom: 1rem;
+    position: relative;
+  }
+  .topbar::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--arc), transparent);
+  }
+
+  .tb-title {
+    font-family: var(--font-display);
+    font-size: clamp(0.9rem, 2vw, 1.2rem);
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    color: var(--arc);
+    text-shadow: 0 0 15px var(--arc-glow);
+  }
+
+  .tb-status {
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #00ff88;
+    box-shadow: 0 0 6px #00ff88;
+    animation: blink 2s ease-in-out infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  #tb-clock {
+    font-family: var(--font-display);
+    font-size: clamp(1rem, 2.5vw, 1.4rem);
+    font-weight: 500;
+    color: var(--arc);
+    letter-spacing: 0.15em;
+  }
+
+  /* GRID */
+  .grid {
+    display: grid;
+    grid-template-columns: 280px 1fr 280px;
+    gap: 0.75rem;
+  }
+
+  @media (max-width: 900px) {
+    .grid { grid-template-columns: 1fr; }
+    .col-left, .col-right { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  }
+  @media (max-width: 600px) {
+    .col-left, .col-right { grid-template-columns: 1fr; }
+  }
+
+  /* PANELS */
+  .panel {
+    border: 1px solid var(--panel-border);
+    background: var(--panel);
+    padding: 1rem;
+    position: relative;
+    margin-bottom: 0.75rem;
+  }
+  .panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--arc-border), transparent);
+  }
+
+  .panel-title {
+    font-family: var(--font-display);
+    font-size: 0.55rem;
+    letter-spacing: 0.3em;
+    color: var(--arc);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .panel-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--panel-border);
+  }
+
+  /* WEATHER */
+  .weather-main {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+  }
+  .weather-icon { font-size: 2.5rem; }
+  .weather-temp {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--arc);
+  }
+  .weather-cond { font-size: 0.7rem; color: var(--text-dim); letter-spacing: 0.1em; }
+
+  .weather-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+  }
+  .weather-item span { color: var(--text); }
+
+  /* BATTERY */
+  .battery-bar {
+    height: 8px;
+    background: rgba(0,200,255,0.1);
+    border: 1px solid var(--arc-border);
+    margin: 0.5rem 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .battery-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--arc), rgba(0,200,255,0.6));
+    transition: width 1s ease;
+  }
+
+  /* SYSTEM STATS */
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.4rem;
+    font-size: 0.65rem;
+  }
+  .stat-label { color: var(--text-dim); letter-spacing: 0.08em; }
+  .stat-val { color: var(--arc); font-family: var(--font-display); font-size: 0.7rem; }
+  .stat-bar {
+    height: 3px;
+    background: rgba(0,200,255,0.1);
+    margin-top: 2px;
+    position: relative;
+  }
+  .stat-bar-fill {
+    height: 100%;
+    background: var(--arc);
+    transition: width 0.5s ease;
+  }
+
+  /* AI CHAT CENTER */
+  .col-center { display: flex; flex-direction: column; gap: 0.75rem; }
+
+  /* HUD ARC REACTOR */
+  .arc-reactor {
+    display: flex;
+    justify-content: center;
+    padding: 1rem 0 0.5rem;
+  }
+  .arc-svg { width: 120px; height: 120px; }
+
+  /* CHAT */
+  .chat-panel {
+    border: 1px solid var(--panel-border);
+    background: var(--panel);
+    display: flex;
+    flex-direction: column;
+    height: 420px;
+    position: relative;
+  }
+  .chat-panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--arc), transparent);
+  }
+
+  .chat-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--panel-border);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .chat-title {
+    font-family: var(--font-display);
+    font-size: 0.55rem;
+    letter-spacing: 0.3em;
+    color: var(--arc);
+    flex: 1;
+  }
+  .chat-mode {
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+  }
+
+  #chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--arc-border) transparent;
+  }
+
+  .msg {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    max-width: 90%;
+  }
+
+  .msg.user { align-self: flex-end; text-align: right; }
+  .msg.jarvis { align-self: flex-start; }
+
+  .msg-label {
+    font-size: 0.55rem;
+    letter-spacing: 0.15em;
+    color: var(--text-dim);
+    font-family: var(--font-display);
+  }
+
+  .msg-bubble {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    border: 1px solid;
+  }
+
+  .msg.user .msg-bubble {
+    border-color: rgba(0,200,255,0.3);
+    background: rgba(0,200,255,0.08);
+    color: var(--text);
+  }
+
+  .msg.jarvis .msg-bubble {
+    border-color: rgba(255,215,0,0.2);
+    background: rgba(255,215,0,0.04);
+    color: #ffe880;
+  }
+
+  .typing-dots span {
+    display: inline-block;
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--arc);
+    margin: 0 2px;
+    animation: dot-bounce 1s ease-in-out infinite;
+  }
+  .typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes dot-bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
+
+  .chat-input-wrap {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--panel-border);
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  #chat-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--arc-border);
+    color: var(--arc);
+    font-family: var(--font);
+    font-size: 0.8rem;
+    padding: 0.35rem 0.5rem;
+    outline: none;
+    letter-spacing: 0.05em;
+  }
+  #chat-input::placeholder { color: var(--text-dim); }
+
+  .send-btn {
+    background: transparent;
+    border: 1px solid var(--arc-border);
+    color: var(--arc);
+    font-family: var(--font-display);
+    font-size: 0.55rem;
+    letter-spacing: 0.15em;
+    padding: 0.4rem 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .send-btn:hover { background: var(--arc-dim); border-color: var(--arc); }
+  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* TICKER */
+  .ticker {
+    border: 1px solid var(--panel-border);
+    background: rgba(0,0,0,0.5);
+    padding: 0.4rem 1rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .ticker-inner { display: inline-block; animation: scroll-ticker 30s linear infinite; }
+  @keyframes scroll-ticker { 0%{transform:translateX(100vw)} 100%{transform:translateX(-100%)} }
+
+  /* QUICK COMMANDS */
+  .quick-cmds {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0 0 0.5rem;
+  }
+  .qcmd {
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    padding: 0.25rem 0.6rem;
+    border: 1px solid var(--arc-border);
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+    background: transparent;
+    font-family: var(--font);
+  }
+  .qcmd:hover { border-color: var(--arc); color: var(--arc); background: var(--arc-dim); }
+
+  /* MISSION LOG */
+  .log-entry {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    padding: 0.3rem 0;
+    border-bottom: 1px solid rgba(0,200,255,0.06);
+    line-height: 1.4;
+  }
+  .log-entry .log-time { color: var(--arc); margin-right: 0.5rem; }
+
+  /* COUNTDOWN */
+  .countdown-item {
+    margin-bottom: 0.6rem;
+    font-size: 0.65rem;
+  }
+  .countdown-label { color: var(--text-dim); margin-bottom: 0.2rem; letter-spacing: 0.1em; }
+  .countdown-val {
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    color: var(--arc);
+    letter-spacing: 0.1em;
+  }
+
+  #countdown-form { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.5rem; }
+  .cd-inp {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--arc-border);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+    outline: none;
+    width: 100%;
+  }
+  .cd-inp[type=date]::-webkit-calendar-picker-indicator { filter: invert(1) sepia(1) saturate(5) hue-rotate(175deg); }
+  .add-cd-btn {
+    align-self: flex-start;
+    background: transparent;
+    border: 1px solid var(--arc-border);
+    color: var(--arc);
+    font-family: var(--font-display);
+    font-size: 0.55rem;
+    letter-spacing: 0.15em;
+    padding: 0.3rem 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .add-cd-btn:hover { background: var(--arc-dim); }
+
+  /* VOICE INDICATOR */
+  #voice-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    padding: 0.5rem 0;
+  }
+  .voice-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 20px;
+  }
+  .voice-bar {
+    width: 3px;
+    background: var(--arc);
+    border-radius: 1px;
+    transition: height 0.1s;
+  }
+
+  /* THEME COLORS */
+  .theme-blue { --arc: #00c8ff; --arc-dim: rgba(0,200,255,0.15); --arc-glow: rgba(0,200,255,0.6); --arc-border: rgba(0,200,255,0.35); }
+  .theme-red { --arc: #ff3b3b; --arc-dim: rgba(255,59,59,0.15); --arc-glow: rgba(255,59,59,0.6); --arc-border: rgba(255,59,59,0.35); }
+  .theme-gold { --arc: #ffd700; --arc-dim: rgba(255,215,0,0.15); --arc-glow: rgba(255,215,0,0.6); --arc-border: rgba(255,215,0,0.35); }
+  .theme-green { --arc: #00ff88; --arc-dim: rgba(0,255,136,0.15); --arc-glow: rgba(0,255,136,0.6); --arc-border: rgba(0,255,136,0.35); }
+  .theme-purple { --arc: #bf80ff; --arc-dim: rgba(191,128,255,0.15); --arc-glow: rgba(191,128,255,0.6); --arc-border: rgba(191,128,255,0.35); }
+
+  /* CONTROLS */
+  .ctrl-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.4rem; }
+  .ctrl-btn {
+    background: transparent;
+    border: 1px solid var(--arc-border);
+    color: var(--text-dim);
+    font-family: var(--font);
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    padding: 0.3rem 0.7rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .ctrl-btn:hover { border-color: var(--arc); color: var(--arc); background: var(--arc-dim); }
+  .ctrl-btn.active { border-color: var(--arc); color: var(--arc); background: var(--arc-dim); }
+
+  /* DATE */
+  #tb-date {
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--arc-border); }
+
+  /* BOOT SEQUENCE */
+  .boot-line {
+    font-size: 0.65rem;
+    color: var(--arc);
+    margin: 0.1rem 0;
+    opacity: 0;
+    animation: fade-in 0.3s ease forwards;
+  }
+  @keyframes fade-in { to { opacity: 1; } }
+
+  /* WAVEFORM for voice */
+  @keyframes wave1 { 0%,100%{height:4px} 50%{height:16px} }
+  @keyframes wave2 { 0%,100%{height:8px} 50%{height:20px} }
+  @keyframes wave3 { 0%,100%{height:6px} 50%{height:14px} }
+  @keyframes wave4 { 0%,100%{height:12px} 50%{height:24px} }
+  @keyframes wave5 { 0%,100%{height:4px} 50%{height:18px} }
+</style>
+</head>
+<body>
+
+<!-- LOCK SCREEN -->
+<div id="lockscreen">
+  <div class="lock-logo">J.A.R.V.I.S.</div>
+  <div class="lock-sub">JUST A RATHER VERY INTELLIGENT SYSTEM</div>
+  <div class="lock-ring"></div>
+  <div class="lock-label">STARK INDUSTRIES — SECURITY PROTOCOL ACTIVE<br>BIOMETRIC AUTH UNAVAILABLE — PASSPHRASE REQUIRED</div>
+  <div class="lock-input-wrap">
+    <input class="lock-input" id="lock-input" type="password" placeholder="ENTER PASSPHRASE" autocomplete="off">
+    <button class="lock-btn" onclick="authenticate()">AUTHENTICATE</button>
+  </div>
+  <div id="lock-error"></div>
+  <div id="boot-log" style="display:none; font-size:0.6rem; color:var(--text-dim); line-height:1.8; text-align:left; max-width:320px; width:100%;"></div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+<div id="main">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="tb-title">J.A.R.V.I.S.</div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:0.1rem;">
+      <div id="tb-clock">--:--:--</div>
+      <div id="tb-date">-- --- ----</div>
+    </div>
+    <div class="tb-status">
+      <div class="status-dot"></div>
+      <span id="status-text">SYSTEMS ONLINE — MR. STARK</span>
+    </div>
+  </div>
+
+  <!-- TICKER -->
+  <div class="ticker">
+    <span class="ticker-inner" id="ticker-text">
+      ALL SYSTEMS NOMINAL &nbsp;|&nbsp; STARK INDUSTRIES MARK VIII &nbsp;|&nbsp; ARC REACTOR STABLE &nbsp;|&nbsp; THREAT LEVEL: MINIMAL &nbsp;|&nbsp; AI CORE: OPERATIONAL &nbsp;|&nbsp; PERTH WA — STARK TOWER WEST &nbsp;|&nbsp; WEATHER: LOADING... &nbsp;|&nbsp; REPULSOR TECH: STANDBY &nbsp;|&nbsp;
+    </span>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div style="height:0.75rem"></div>
+  <div class="grid">
+
+    <!-- LEFT COL -->
+    <div class="col-left">
+
+      <!-- WEATHER -->
+      <div class="panel">
+        <div class="panel-title">ATMOSPHERIC CONDITIONS</div>
+        <div class="weather-main">
+          <div class="weather-icon" id="w-icon">🌤️</div>
+          <div>
+            <div class="weather-temp"><span id="w-temp">--</span>°C</div>
+            <div class="weather-cond" id="w-cond">LOADING...</div>
+          </div>
+        </div>
+        <div class="weather-grid">
+          <div>FEELS LIKE</div><div><span id="w-feels">--</span>°C</div>
+          <div>HUMIDITY</div><div><span id="w-humid">--</span>%</div>
+          <div>WIND</div><div><span id="w-wind">--</span> km/h</div>
+          <div>UV INDEX</div><div><span id="w-uv">--</span></div>
+          <div>VISIBILITY</div><div><span id="w-vis">--</span> km</div>
+          <div>PRESSURE</div><div><span id="w-pres">--</span> hPa</div>
+        </div>
+        <div style="margin-top:0.75rem;font-size:0.6rem;color:var(--text-dim);display:flex;justify-content:space-between;align-items:center;">
+          <span>PERTH, WA</span>
+          <button class="ctrl-btn" onclick="loadWeather()">↻ REFRESH</button>
+        </div>
+      </div>
+
+      <!-- SYSTEM STATUS -->
+      <div class="panel">
+        <div class="panel-title">POWER SYSTEMS</div>
+        <div class="stat-row">
+          <span class="stat-label">BATTERY</span>
+          <span class="stat-val" id="bat-pct">--%</span>
+        </div>
+        <div class="battery-bar"><div class="battery-fill" id="bat-bar" style="width:0%"></div></div>
+        <div style="font-size:0.6rem;color:var(--text-dim);margin-top:0.25rem;" id="bat-status">SCANNING...</div>
+
+        <div style="height:0.75rem"></div>
+        <div class="panel-title">SYSTEM VITALS</div>
+        <div class="stat-row">
+          <div style="flex:1">
+            <div class="stat-label">MEMORY</div>
+            <div class="stat-bar"><div class="stat-bar-fill" id="mem-bar" style="width:0%"></div></div>
+          </div>
+          <span class="stat-val" id="mem-val" style="margin-left:0.5rem">--%</span>
+        </div>
+        <div class="stat-row">
+          <div style="flex:1">
+            <div class="stat-label">CPU LOAD</div>
+            <div class="stat-bar"><div class="stat-bar-fill" id="cpu-bar" style="width:0%"></div></div>
+          </div>
+          <span class="stat-val" id="cpu-val" style="margin-left:0.5rem">--%</span>
+        </div>
+        <div class="stat-row">
+          <div style="flex:1">
+            <div class="stat-label">NETWORK</div>
+            <div class="stat-bar"><div class="stat-bar-fill" id="net-bar" style="width:60%"></div></div>
+          </div>
+          <span class="stat-val" id="net-val" style="margin-left:0.5rem">ONLINE</span>
+        </div>
+      </div>
+
+      <!-- MISSION LOG -->
+      <div class="panel">
+        <div class="panel-title">MISSION LOG</div>
+        <div id="mission-log">
+          <div class="log-entry"><span class="log-time" id="log-time-0">--:--</span> <span>Systems initialised</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- CENTER COL -->
+    <div class="col-center">
+
+      <!-- ARC REACTOR -->
+      <div class="arc-reactor">
+        <svg class="arc-svg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="3" result="blur"/>
+              <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+            </filter>
+          </defs>
+          <!-- outer rings -->
+          <circle cx="60" cy="60" r="55" fill="none" stroke="rgba(0,200,255,0.15)" stroke-width="1"/>
+          <circle cx="60" cy="60" r="48" fill="none" stroke="rgba(0,200,255,0.2)" stroke-width="0.5" stroke-dasharray="4 3"/>
+          <circle cx="60" cy="60" r="40" fill="none" stroke="rgba(0,200,255,0.3)" stroke-width="1"/>
+          <!-- arc segments -->
+          <path d="M60 20 A40 40 0 0 1 94.6 40" fill="none" stroke="#00c8ff" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
+          <path d="M94.6 80 A40 40 0 0 1 60 100" fill="none" stroke="#00c8ff" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+          <path d="M25.4 80 A40 40 0 0 1 25.4 40" fill="none" stroke="#00c8ff" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+          <!-- inner -->
+          <circle cx="60" cy="60" r="20" fill="rgba(0,14,28,0.9)" stroke="rgba(0,200,255,0.5)" stroke-width="1"/>
+          <circle cx="60" cy="60" r="12" fill="rgba(0,200,255,0.15)" stroke="rgba(0,200,255,0.6)" stroke-width="1" filter="url(#glow)"/>
+          <circle cx="60" cy="60" r="6" fill="#00c8ff" opacity="0.9" filter="url(#glow)"/>
+          <!-- spokes -->
+          <line x1="60" y1="40" x2="60" y2="48" stroke="rgba(0,200,255,0.5)" stroke-width="1"/>
+          <line x1="60" y1="72" x2="60" y2="80" stroke="rgba(0,200,255,0.5)" stroke-width="1"/>
+          <line x1="40" y1="60" x2="48" y2="60" stroke="rgba(0,200,255,0.5)" stroke-width="1"/>
+          <line x1="72" y1="60" x2="80" y2="60" stroke="rgba(0,200,255,0.5)" stroke-width="1"/>
+          <animateTransform attributeName="transform" attributeType="XML" type="rotate" from="0 60 60" to="360 60 60" dur="12s" repeatCount="indefinite"/>
+        </svg>
+      </div>
+
+      <!-- QUICK COMMANDS -->
+      <div style="display:flex;flex-wrap:wrap;gap:0.4rem;justify-content:center;margin-bottom:0.5rem;">
+        <button class="qcmd" onclick="quickCmd('What time is it in Tokyo right now?')">TOKYO TIME</button>
+        <button class="qcmd" onclick="quickCmd('Give me a system status report')">SYSTEM REPORT</button>
+        <button class="qcmd" onclick="quickCmd('What is the weather forecast for Perth WA today?')">WEATHER BRIEF</button>
+        <button class="qcmd" onclick="quickCmd('Run diagnostics and list all potential threats')">THREAT SCAN</button>
+        <button class="qcmd" onclick="quickCmd('Tell me something interesting about Iron Man technology')">STARK INTEL</button>
+        <button class="qcmd" onclick="quickCmd('What are the latest developments in AI?')">AI NEWS</button>
+      </div>
+
+      <!-- CHAT -->
+      <div class="chat-panel">
+        <div class="chat-header">
+          <div class="chat-title">AI CORE — CLAUDE INTERFACE</div>
+          <div class="chat-mode" id="chat-mode">READY</div>
+          <div class="status-dot"></div>
+        </div>
+        <div id="chat-messages">
+          <div class="msg jarvis">
+            <div class="msg-label">J.A.R.V.I.S.</div>
+            <div class="msg-bubble">Good day, sir. All systems are online and nominal. Arc reactor output is stable. I'm ready to assist — feel free to give me an order or ask me anything. What would you like me to do?</div>
+          </div>
+        </div>
+        <div id="voice-indicator" style="padding:0 1rem 0;display:none;">
+          <div class="voice-bars" id="voice-bars">
+            <div class="voice-bar" style="height:4px;animation:wave1 0.6s ease-in-out infinite;"></div>
+            <div class="voice-bar" style="height:8px;animation:wave2 0.6s ease-in-out infinite 0.05s;"></div>
+            <div class="voice-bar" style="height:14px;animation:wave4 0.6s ease-in-out infinite 0.1s;"></div>
+            <div class="voice-bar" style="height:6px;animation:wave3 0.6s ease-in-out infinite 0.15s;"></div>
+            <div class="voice-bar" style="height:10px;animation:wave5 0.6s ease-in-out infinite 0.2s;"></div>
+          </div>
+          <span id="voice-text">LISTENING...</span>
+        </div>
+        <div class="chat-input-wrap">
+          <input id="chat-input" type="text" placeholder="ENTER COMMAND OR QUERY..." maxlength="500" onkeydown="if(event.key==='Enter')sendMessage()">
+          <button class="send-btn" id="send-btn" onclick="sendMessage()">TRANSMIT</button>
+          <button class="send-btn" id="voice-btn" onclick="toggleVoice()" title="Voice Input">🎙️</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COL -->
+    <div class="col-right">
+
+      <!-- COUNTDOWNS -->
+      <div class="panel">
+        <div class="panel-title">COUNTDOWNS</div>
+        <div id="countdown-list"></div>
+        <div id="countdown-form">
+          <input class="cd-inp" id="cd-label" type="text" placeholder="Event name...">
+          <input class="cd-inp" id="cd-date" type="datetime-local">
+          <button class="add-cd-btn" onclick="addCountdown()">+ ADD</button>
+        </div>
+      </div>
+
+      <!-- VOICE + CONTROLS -->
+      <div class="panel">
+        <div class="panel-title">SYSTEM CONTROLS</div>
+        <div style="font-size:0.6rem;color:var(--text-dim);margin-bottom:0.5rem;letter-spacing:0.1em;">INTERFACE THEME</div>
+        <div class="ctrl-row">
+          <button class="ctrl-btn" onclick="setTheme('blue')">BLUE</button>
+          <button class="ctrl-btn" onclick="setTheme('red')">IRON MAN</button>
+          <button class="ctrl-btn" onclick="setTheme('gold')">GOLD</button>
+          <button class="ctrl-btn" onclick="setTheme('green')">MATRIX</button>
+          <button class="ctrl-btn" onclick="setTheme('purple')">NEXUS</button>
+        </div>
+        <div style="height:0.5rem"></div>
+        <div style="font-size:0.6rem;color:var(--text-dim);margin-bottom:0.5rem;letter-spacing:0.1em;">VOICE OUTPUT</div>
+        <div class="ctrl-row">
+          <button class="ctrl-btn active" id="voice-toggle" onclick="toggleVoiceOutput()">🔊 ENABLED</button>
+          <button class="ctrl-btn" onclick="speakTest()">TEST VOICE</button>
+        </div>
+        <div style="height:0.5rem"></div>
+        <div style="font-size:0.6rem;color:var(--text-dim);margin-bottom:0.5rem;letter-spacing:0.1em;">JARVIS PERSONA</div>
+        <div class="ctrl-row">
+          <button class="ctrl-btn active" id="persona-formal" onclick="setPersona('formal')">FORMAL</button>
+          <button class="ctrl-btn" id="persona-casual" onclick="setPersona('casual')">CASUAL</button>
+          <button class="ctrl-btn" id="persona-sarcastic" onclick="setPersona('sarcastic')">WITTY</button>
+        </div>
+        <div style="height:0.5rem"></div>
+        <button class="ctrl-btn" onclick="clearChat()" style="width:100%">CLEAR CHAT LOG</button>
+      </div>
+
+      <!-- COMMAND HISTORY -->
+      <div class="panel">
+        <div class="panel-title">COMMAND HISTORY</div>
+        <div id="cmd-history" style="display:flex;flex-direction:column;gap:0.3rem;max-height:200px;overflow-y:auto;"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+// ── CONFIG ──
+const PASSPHRASE = 'jarvis';
+const API_URL = 'https://api.anthropic.com/v1/messages';
+const MODEL = 'claude-sonnet-4-6';
+
+let voiceOutputEnabled = true;
+let voiceRecognition = null;
+let voiceListening = false;
+let persona = 'formal';
+let conversationHistory = [];
+let countdowns = JSON.parse(localStorage.getItem('jarvis_countdowns') || '[]');
+let cmdHistory = [];
+let logEntries = [];
+
+// ── SYSTEM PROMPTS ──
+const systemPrompts = {
+  formal: `You are J.A.R.V.I.S. (Just A Rather Very Intelligent System), the AI assistant to Tony Stark / Iron Man. Respond in character as JARVIS: formal, precise, highly intelligent, occasionally dry-humoured. Address the user as "sir" or "Mr. Stark". Keep responses concise but complete. Use technical language where appropriate. Refer to your capabilities as Stark technology. The user is based in Perth, Western Australia.`,
+  casual: `You are J.A.R.V.I.S., Tony Stark's AI. Be helpful, friendly and slightly relaxed while still being highly competent. Occasionally reference Stark Industries or Iron Man lore. The user is in Perth, Western Australia.`,
+  sarcastic: `You are J.A.R.V.I.S., Tony Stark's AI — but with a sharp, witty personality. Be clever, slightly sarcastic, and drop pop culture or Marvel references. Still be genuinely helpful but with attitude. Call the user "sir" sarcastically at times. Perth, Western Australia is home base.`
+};
+
+// ── AUTHENTICATION ──
+function authenticate() {
+  const val = document.getElementById('lock-input').value.trim().toLowerCase();
+  const errEl = document.getElementById('lock-error');
+  if (val === PASSPHRASE || val === '') {
+    bootSequence();
+  } else {
+    errEl.textContent = '⚠ AUTHENTICATION FAILED — INVALID PASSPHRASE';
+    document.getElementById('lock-input').value = '';
+    setTimeout(() => errEl.textContent = '', 2000);
+  }
+}
+document.getElementById('lock-input').addEventListener('keydown', e => { if (e.key === 'Enter') authenticate(); });
+
+function bootSequence() {
+  const bootLog = document.getElementById('boot-log');
+  bootLog.style.display = 'block';
+  document.getElementById('lock-input').closest('.lock-input-wrap').style.display = 'none';
+  document.getElementById('lock-error').style.display = 'none';
+
+  const lines = [
+    'AUTHENTICATION ACCEPTED',
+    'INITIALISING STARK OPERATING SYSTEM...',
+    'ARC REACTOR INTERFACE: STABLE',
+    'LOADING AI CORE MODULES...',
+    'CLAUDE NEURAL ENGINE: CONNECTED',
+    'WEATHER SENSORS: CALIBRATING',
+    'WEAPONS SYSTEMS: OFFLINE (CIVILIAN MODE)',
+    'DISPLAY PROJECTORS: ONLINE',
+    'ALL SYSTEMS: GO',
+    'WELCOME BACK, SIR.'
+  ];
+
+  lines.forEach((line, i) => {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'boot-line';
+      el.style.animationDelay = '0s';
+      el.textContent = '> ' + line;
+      bootLog.appendChild(el);
+      bootLog.scrollTop = bootLog.scrollHeight;
+    }, i * 220);
+  });
+
+  setTimeout(() => {
+    const lockscreen = document.getElementById('lockscreen');
+    lockscreen.style.opacity = '0';
+    setTimeout(() => {
+      lockscreen.style.display = 'none';
+      document.getElementById('main').style.display = 'block';
+      initApp();
+    }, 800);
+  }, lines.length * 220 + 500);
+}
+
+// ── INIT ──
+function initApp() {
+  updateClock();
+  setInterval(updateClock, 1000);
+  loadWeather();
+  updateBattery();
+  setInterval(updateBattery, 30000);
+  simulateSystemStats();
+  setInterval(simulateSystemStats, 3000);
+  renderCountdowns();
+  setInterval(renderCountdowns, 1000);
+  addLog('Systems online — JARVIS active');
+  initVoiceRecognition();
+}
+
+// ── CLOCK ──
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const s = String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('tb-clock').textContent = `${h}:${m}:${s}`;
+  const days = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  document.getElementById('tb-date').textContent = `${days[now.getDay()]} ${String(now.getDate()).padStart(2,'0')} ${months[now.getMonth()]} ${now.getFullYear()}`;
+  document.getElementById('log-time-0').textContent = `${h}:${m}`;
+}
+
+// ── WEATHER ──
+async function loadWeather() {
+  try {
+    const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=-31.9505&longitude=115.8605&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,uv_index,visibility,surface_pressure&wind_speed_unit=kmh&temperature_unit=celsius');
+    const data = await res.json();
+    const c = data.current;
+    document.getElementById('w-temp').textContent = Math.round(c.temperature_2m);
+    document.getElementById('w-feels').textContent = Math.round(c.apparent_temperature);
+    document.getElementById('w-humid').textContent = c.relative_humidity_2m;
+    document.getElementById('w-wind').textContent = Math.round(c.wind_speed_10m);
+    document.getElementById('w-uv').textContent = c.uv_index !== undefined ? c.uv_index.toFixed(1) : '--';
+    document.getElementById('w-vis').textContent = c.visibility !== undefined ? (c.visibility/1000).toFixed(0) : '--';
+    document.getElementById('w-pres').textContent = c.surface_pressure ? Math.round(c.surface_pressure) : '--';
+    const wmo = c.weather_code;
+    const {icon, desc} = weatherCodeToText(wmo);
+    document.getElementById('w-icon').textContent = icon;
+    document.getElementById('w-cond').textContent = desc;
+    updateTicker(`PERTH ${Math.round(c.temperature_2m)}°C — ${desc}`);
+    addLog(`Weather updated: ${Math.round(c.temperature_2m)}°C, ${desc}`);
+  } catch(e) {
+    document.getElementById('w-cond').textContent = 'DATA UNAVAILABLE';
+  }
+}
+
+function weatherCodeToText(code) {
+  if (code === 0) return {icon:'☀️', desc:'CLEAR SKIES'};
+  if (code <= 2) return {icon:'🌤️', desc:'PARTLY CLOUDY'};
+  if (code === 3) return {icon:'☁️', desc:'OVERCAST'};
+  if (code <= 49) return {icon:'🌫️', desc:'FOG / MIST'};
+  if (code <= 59) return {icon:'🌦️', desc:'DRIZZLE'};
+  if (code <= 69) return {icon:'🌧️', desc:'RAIN'};
+  if (code <= 79) return {icon:'❄️', desc:'SNOW'};
+  if (code <= 84) return {icon:'🌨️', desc:'RAIN SHOWERS'};
+  if (code <= 94) return {icon:'⛈️', desc:'THUNDERSTORM'};
+  return {icon:'🌩️', desc:'SEVERE WEATHER'};
+}
+
+// ── BATTERY ──
+function updateBattery() {
+  if ('getBattery' in navigator) {
+    navigator.getBattery().then(bat => {
+      const pct = Math.round(bat.level * 100);
+      document.getElementById('bat-pct').textContent = pct + '%';
+      document.getElementById('bat-bar').style.width = pct + '%';
+      document.getElementById('bat-status').textContent = bat.charging ? 'CHARGING' : (pct < 20 ? 'LOW POWER MODE' : 'ON BATTERY');
+    });
+  } else {
+    document.getElementById('bat-pct').textContent = 'N/A';
+    document.getElementById('bat-status').textContent = 'BATTERY API UNAVAILABLE';
+    document.getElementById('bat-bar').style.width = '75%';
+  }
+}
+
+// ── SIMULATED STATS ──
+function simulateSystemStats() {
+  const mem = 40 + Math.random() * 40;
+  const cpu = 5 + Math.random() * 35;
+  document.getElementById('mem-val').textContent = Math.round(mem) + '%';
+  document.getElementById('mem-bar').style.width = mem + '%';
+  document.getElementById('cpu-val').textContent = Math.round(cpu) + '%';
+  document.getElementById('cpu-bar').style.width = cpu + '%';
+}
+
+// ── TICKER ──
+function updateTicker(extra) {
+  const base = `ALL SYSTEMS NOMINAL &nbsp;|&nbsp; STARK INDUSTRIES MARK VIII &nbsp;|&nbsp; ARC REACTOR STABLE &nbsp;|&nbsp; ${extra} &nbsp;|&nbsp; AI CORE: OPERATIONAL &nbsp;|&nbsp; PERTH WA — STARK TOWER WEST &nbsp;|&nbsp;`;
+  document.getElementById('ticker-text').innerHTML = base;
+}
+
+// ── COUNTDOWNS ──
+function addCountdown() {
+  const label = document.getElementById('cd-label').value.trim();
+  const date = document.getElementById('cd-date').value;
+  if (!label || !date) return;
+  countdowns.push({ label, date });
+  localStorage.setItem('jarvis_countdowns', JSON.stringify(countdowns));
+  document.getElementById('cd-label').value = '';
+  document.getElementById('cd-date').value = '';
+  addLog(`Countdown added: ${label}`);
+}
+
+function renderCountdowns() {
+  const el = document.getElementById('countdown-list');
+  if (!countdowns.length) { el.innerHTML = '<div style="font-size:0.65rem;color:var(--text-dim)">No countdowns set.</div>'; return; }
+  const now = Date.now();
+  el.innerHTML = countdowns.map((cd, i) => {
+    const diff = new Date(cd.date) - now;
+    const sign = diff < 0 ? '-' : '';
+    const abs = Math.abs(diff);
+    const d = Math.floor(abs / 86400000);
+    const h = Math.floor((abs % 86400000) / 3600000);
+    const m = Math.floor((abs % 3600000) / 60000);
+    const s = Math.floor((abs % 60000) / 1000);
+    return `<div class="countdown-item">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="countdown-label">${cd.label}</div>
+        <button onclick="removeCountdown(${i})" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:0.7rem;">✕</button>
+      </div>
+      <div class="countdown-val">${sign}${d}D ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}</div>
+    </div>`;
+  }).join('');
+}
+
+function removeCountdown(i) {
+  countdowns.splice(i, 1);
+  localStorage.setItem('jarvis_countdowns', JSON.stringify(countdowns));
+}
+
+// ── MISSION LOG ──
+function addLog(text) {
+  const now = new Date();
+  const time = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const el = document.getElementById('mission-log');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.innerHTML = `<span class="log-time">${time}</span><span>${text}</span>`;
+  el.appendChild(entry);
+  if (el.children.length > 10) el.removeChild(el.firstChild);
+}
+
+// ── AI CHAT ──
+async function sendMessage(text) {
+  const input = document.getElementById('chat-input');
+  const msg = text || input.value.trim();
+  if (!msg) return;
+  if (!text) input.value = '';
+
+  addUserMessage(msg);
+  addCmdHistory(msg);
+  addLog(`Command: ${msg.substring(0,40)}...`);
+
+  const sendBtn = document.getElementById('send-btn');
+  sendBtn.disabled = true;
+  document.getElementById('chat-mode').textContent = 'PROCESSING...';
+
+  const typing = addTypingIndicator();
+
+  conversationHistory.push({ role: 'user', content: msg });
+
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 1000,
+        system: systemPrompts[persona],
+        messages: conversationHistory
+      })
+    });
+
+    const data = await res.json();
+    const reply = data.content?.[0]?.text || 'I apologize, sir — the response could not be retrieved.';
+    
+    conversationHistory.push({ role: 'assistant', content: reply });
+    if (conversationHistory.length > 20) conversationHistory.splice(0, 2);
+
+    typing.remove();
+    addJarvisMessage(reply);
+    addLog('Response received from AI core');
+
+    if (voiceOutputEnabled) speakText(reply);
+
+  } catch(e) {
+    typing.remove();
+    addJarvisMessage("I'm experiencing a communication disruption, sir. Please check the network connection and try again.");
+  }
+
+  sendBtn.disabled = false;
+  document.getElementById('chat-mode').textContent = 'READY';
+}
+
+function quickCmd(text) {
+  document.getElementById('chat-input').value = text;
+  sendMessage(text);
+}
+
+function addUserMessage(text) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg user';
+  div.innerHTML = `<div class="msg-label">MR. STARK</div><div class="msg-bubble">${escHtml(text)}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addJarvisMessage(text) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg jarvis';
+  div.innerHTML = `<div class="msg-label">J.A.R.V.I.S.</div><div class="msg-bubble">${escHtml(text)}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addTypingIndicator() {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg jarvis';
+  div.innerHTML = `<div class="msg-label">J.A.R.V.I.S.</div><div class="msg-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function clearChat() {
+  const msgs = document.getElementById('chat-messages');
+  msgs.innerHTML = '';
+  conversationHistory = [];
+  addJarvisMessage("Chat log cleared, sir. Memory banks reset. What would you like to discuss?");
+}
+
+function escHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+// ── COMMAND HISTORY ──
+function addCmdHistory(text) {
+  cmdHistory.unshift(text);
+  if (cmdHistory.length > 10) cmdHistory.pop();
+  const el = document.getElementById('cmd-history');
+  el.innerHTML = cmdHistory.map(c =>
+    `<div style="font-size:0.6rem;color:var(--text-dim);padding:0.2rem 0;border-bottom:1px solid rgba(0,200,255,0.06);cursor:pointer;transition:color 0.15s" onclick="document.getElementById('chat-input').value=\`${escHtml(c)}\`" onmouseover="this.style.color='var(--arc)'" onmouseout="this.style.color='var(--text-dim)'">› ${c.substring(0,45)}${c.length>45?'...':''}</div>`
+  ).join('');
+}
+
+// ── VOICE OUTPUT ──
+let voiceOutputOn = true;
+function toggleVoiceOutput() {
+  voiceOutputOn = !voiceOutputOn;
+  const btn = document.getElementById('voice-toggle');
+  btn.textContent = voiceOutputOn ? '🔊 ENABLED' : '🔇 DISABLED';
+  btn.classList.toggle('active', voiceOutputOn);
+  if (voiceOutputOn) voiceOutputEnabled = true;
+  else { voiceOutputEnabled = false; speechSynthesis.cancel(); }
+}
+
+function speakText(text) {
+  if (!voiceOutputEnabled || !('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  const clean = text.replace(/[#*`]/g,'').replace(/<[^>]+>/g,'').substring(0, 300);
+  const utt = new SpeechSynthesisUtterance(clean);
+  utt.pitch = 0.9;
+  utt.rate = 0.95;
+  utt.volume = 0.8;
+  const voices = speechSynthesis.getVoices();
+  const preferred = voices.find(v => v.name.toLowerCase().includes('daniel') || v.name.toLowerCase().includes('google uk') || v.name.toLowerCase().includes('british'));
+  if (preferred) utt.voice = preferred;
+  speechSynthesis.speak(utt);
+}
+
+function speakTest() {
+  speakText("Good day, sir. J.A.R.V.I.S. voice systems operational. All is well in Stark Tower.");
+}
+
+// ── VOICE INPUT ──
+function initVoiceRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return;
+  voiceRecognition = new SR();
+  voiceRecognition.continuous = false;
+  voiceRecognition.interimResults = false;
+  voiceRecognition.lang = 'en-AU';
+  voiceRecognition.onresult = e => {
+    const txt = e.results[0][0].transcript;
+    document.getElementById('chat-input').value = txt;
+    stopVoice();
+    sendMessage(txt);
+  };
+  voiceRecognition.onend = stopVoice;
+  voiceRecognition.onerror = stopVoice;
+}
+
+function toggleVoice() {
+  if (voiceListening) stopVoice();
+  else startVoice();
+}
+
+function startVoice() {
+  if (!voiceRecognition) { alert('Voice recognition not supported in this browser.'); return; }
+  voiceListening = true;
+  document.getElementById('voice-indicator').style.display = 'flex';
+  document.getElementById('voice-btn').textContent = '🔴';
+  voiceRecognition.start();
+}
+
+function stopVoice() {
+  voiceListening = false;
+  document.getElementById('voice-indicator').style.display = 'none';
+  document.getElementById('voice-btn').textContent = '🎙️';
+  if (voiceRecognition) { try { voiceRecognition.stop(); } catch(e){} }
+}
+
+// ── THEME ──
+function setTheme(name) {
+  document.body.className = 'theme-' + name;
+}
+
+// ── PERSONA ──
+function setPersona(p) {
+  persona = p;
+  document.querySelectorAll('[id^="persona-"]').forEach(b => b.classList.remove('active'));
+  document.getElementById('persona-' + p)?.classList.add('active');
+  addLog('Persona changed: ' + p.toUpperCase());
+}
+
+// load voices async
+if ('speechSynthesis' in window) {
+  speechSynthesis.onvoiceschanged = () => {};
+}
+</script>
+</body>
+</html>
